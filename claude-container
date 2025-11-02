@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# claude-dev — launch the Claude Code dev container from any repo
+
+set -euo pipefail
+
+# Get absolute path of current directory
+PWD_ABS="$(pwd)"
+
+# Run the dev container, mapping this repo and Docker socket
+exec docker run --rm -it \
+  -v "${PWD_ABS}:${PWD_ABS}" -w "${PWD_ABS}" \
+  -v "${HOME}/.aws:/home/dev/.aws" \
+  -v "${HOME}/.claude:/home/dev/.claude:rw" \
+  -v "${HOME}/.claude.json:/home/dev/.claude.json:rw" \
+  -v "/var/run/docker.sock:/var/run/docker.sock" \
+  claude-code-dev:latest "$@"
