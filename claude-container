@@ -13,4 +13,7 @@ exec docker run --rm -it \
   -v "${HOME}/.claude:/home/dev/.claude:rw" \
   -v "${HOME}/.claude.json:/home/dev/.claude.json:rw" \
   -v "/var/run/docker.sock:/var/run/docker.sock" \
+  ${AWS_PROFILE:+-e "AWS_PROFILE=${AWS_PROFILE}"} \
+  ${AWS_REGION:+-e "AWS_REGION=${AWS_REGION}"} \
+  ${CLAUDE_CODE_USE_BEDROCK:+-e "CLAUDE_CODE_USE_BEDROCK=${CLAUDE_CODE_USE_BEDROCK}"} \
   claude-code-dev:latest "$@"

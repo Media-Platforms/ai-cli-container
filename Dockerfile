@@ -82,8 +82,5 @@ RUN curl -fsSL https://claude.ai/install.sh | bash && \
 
 USER root
 WORKDIR /work
-ENV AWS_REGION=us-east-1 \
-    AWS_PROFILE=aidev \
-    CLAUDE_CODE_USE_BEDROCK=1
 
 ENTRYPOINT ["/usr/local/bin/start-claude"]
