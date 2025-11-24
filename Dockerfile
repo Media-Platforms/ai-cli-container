@@ -45,34 +45,7 @@ USER root
 WORKDIR /work
 
 # Entrypoint script: fix docker.sock bind mount perms, drop root privs
-RUN cat > /usr/local/bin/start-claude <<'BASH' && chmod +x /usr/local/bin/start-claude
-#!/usr/bin/env bash
-set -euo pipefail
-
-run_as_dev() {
-  exec sudo -E -u dev -H env \
-    HOME=/home/dev \
-    PATH="/home/dev/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
-    bash -lc "$*"
-}
-
-SOCK=/var/run/docker.sock
-if [ -S "$SOCK" ]; then
-  chown dev "$SOCK" 2>/dev/null || true
-fi
-
-# If first arg doesn't start with '-', run it as a command instead of claude
-if [ $# -gt 0 ] && [[ "$1" != -* ]]; then
-  run_as_dev "$@"
-fi
-
-# Otherwise, run claude with --dangerously-skip-permissions and any provided options
-# Default model is 'sonnet[1m]' but can be overridden by --model in args
-if [[ "$*" == *"--model"* ]]; then
-  run_as_dev claude --dangerously-skip-permissions "$@"
-else
-  run_as_dev claude --dangerously-skip-permissions --model 'sonnet[1m]' "$@"
-fi
-BASH
+COPY start-claude /usr/local/bin/start-claude
+RUN chmod +x /usr/local/bin/start-claude
 
 ENTRYPOINT ["/usr/local/bin/start-claude"]
