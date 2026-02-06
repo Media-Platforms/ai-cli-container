@@ -26,6 +26,6 @@ fi
 # Default model is 'sonnet[1m]' but can be overridden by --model in args
 CLAUDE_CMD="claude --dangerously-skip-permissions"
 if [[ "$*" != *"--model"* ]]; then
-  CLAUDE_CMD="$CLAUDE_CMD --model sonnet[1m]"
+  CLAUDE_CMD="$CLAUDE_CMD --model us.anthropic.claude-opus-4-6-v1"
 fi
 exec $DEV_ENV bash -lc "$CLAUDE_CMD $*"
