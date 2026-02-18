@@ -152,10 +152,11 @@ The container uses Claude Code's `--plugin-dir` flag to load `/home/dev/containe
 ```
 container-plugin/
 ├── .claude-plugin/
-│   └── plugin.json       # Plugin manifest
-├── .mcp.json             # MCP server definitions
+│   └── plugin.json           # Plugin manifest
+├── .mcp.json                 # Global MCP server definitions (empty; servers defined per-skill)
+├── pdb_mcp_server.py         # Pdb MCP server (loaded only when python-test-debugger is used)
 └── agents/
-    └── python-test-debugger.md  # Subagent definitions
+    └── python-test-debugger.md  # Subagent definitions (includes inline MCP server config)
 ```
 
 **Benefits of the plugin approach:**
@@ -192,7 +193,7 @@ This ensures implementations follow your project's established patterns and stan
 
 #### pdb (Python Debugger)
 
-An MCP server for Python debugging with Pdb in Docker containers:
+`pdb_mcp_server.py` is embedded in the `container-plugin/` directory and is only started when the `python-test-debugger` skill is invoked — it does **not** run during normal Claude sessions. It provides:
 
 - **`start_pdb_session`** - Start a Pdb session in a Docker Compose service
 - **`send_pdb_command`** - Send commands (e.g., `n`, `s`, `p var`)
@@ -203,7 +204,13 @@ An MCP server for Python debugging with Pdb in Docker containers:
 To add more subagents or MCP servers to the container:
 
 1. Add subagent markdown files to `container-plugin/agents/`
-2. Add MCP server definitions to `container-plugin/.mcp.json`
+2. To include an MCP server that loads only when a specific agent is used, place the server script in `container-plugin/` and define it inline in the agent's frontmatter:
+   ```yaml
+   mcpServers:
+     my-server:
+       command: python3
+       args: ["/home/dev/container-plugin/my_server.py"]
+   ```
 3. Rebuild the container
 
 Example subagent (`container-plugin/agents/my-agent.md`):

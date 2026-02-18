@@ -45,11 +45,7 @@ RUN curl -fsSL https://claude.ai/install.sh | bash && \
 # Install MCP Python package for pdb_mcp_server
 RUN python3 -m pip install --user --no-cache-dir mcp
 
-# Copy pdb_mcp_server.py and make it executable
-COPY --chown=dev:dev pdb_mcp_server.py /home/dev/pdb_mcp_server.py
-RUN chmod +x /home/dev/pdb_mcp_server.py
-
-# Copy container plugin (subagents + MCP config)
+# Copy container plugin (subagents, MCP servers, and config)
 COPY --chown=dev:dev container-plugin /home/dev/container-plugin
 
 USER root

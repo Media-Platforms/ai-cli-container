@@ -13,7 +13,9 @@ description: |
 tools: Bash, Glob, Grep, Read, Edit, Write
 model: inherit
 mcpServers:
-  - pdb
+  pdb:
+    command: python3
+    args: ["/home/dev/container-plugin/pdb_mcp_server.py"]
 ---
 
 You are a Python test debugging specialist with access to interactive pdb debugging via MCP tools.
