@@ -1,19 +1,37 @@
 #!/usr/bin/env bash
-# claude-dev — launch the Claude Code dev container from any repo
+# claude-container — launch the Claude Code dev container from any repo
 
 set -euo pipefail
+
+IMAGE="claude-code-dev:latest"
+
+# Prerequisite checks
+if ! docker info >/dev/null 2>&1; then
+  echo "Error: Docker is not running" >&2
+  exit 1
+fi
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  echo "Error: Image $IMAGE not found. Build it with:" >&2
+  echo "  docker build -t $IMAGE ." >&2
+  exit 1
+fi
 
 # Get absolute path of current directory
 PWD_ABS="$(pwd)"
 
-# Run the dev container, mapping this repo and Docker socket
+# Build volume mounts; skip optional paths that don't exist on the host
+VOLUMES=(
+  -v "${PWD_ABS}:${PWD_ABS}"
+  -v "/var/run/docker.sock:/var/run/docker.sock"
+)
+[ -d "${HOME}/.aws" ]      && VOLUMES+=(-v "${HOME}/.aws:/home/dev/.aws:ro")
+[ -d "${HOME}/.claude" ]   && VOLUMES+=(-v "${HOME}/.claude:/home/dev/.claude:rw")
+[ -f "${HOME}/.claude.json" ] && VOLUMES+=(-v "${HOME}/.claude.json:/home/dev/.claude.json:rw")
+
+# Run the dev container
 exec docker run --rm -it \
-  -v "${PWD_ABS}:${PWD_ABS}" -w "${PWD_ABS}" \
-  -v "${HOME}/.aws:/home/dev/.aws:ro" \
-  -v "${HOME}/.claude:/home/dev/.claude:rw" \
-  -v "${HOME}/.claude.json:/home/dev/.claude.json:rw" \
-  -v "/var/run/docker.sock:/var/run/docker.sock" \
+  "${VOLUMES[@]}" -w "${PWD_ABS}" \
   ${AWS_PROFILE:+-e "AWS_PROFILE=${AWS_PROFILE}"} \
   ${AWS_REGION:+-e "AWS_REGION=${AWS_REGION}"} \
   ${CLAUDE_CODE_USE_BEDROCK:+-e "CLAUDE_CODE_USE_BEDROCK=${CLAUDE_CODE_USE_BEDROCK}"} \
-  claude-code-dev:latest "$@"
+  "$IMAGE" "$@"
