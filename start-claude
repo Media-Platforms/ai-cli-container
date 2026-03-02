@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEV_ENV="sudo -E -u dev -H env HOME=/home/dev"
-
-run_as_dev() {
-  $DEV_ENV bash -lc "$*"
-}
+DEV_ENV=(sudo -E -u dev -H env HOME=/home/dev)
 
 SOCK=/var/run/docker.sock
 if [ -S "$SOCK" ]; then
@@ -14,13 +10,26 @@ fi
 
 # If first arg doesn't start with '-', run it as a command instead of claude
 if [ $# -gt 0 ] && [ "${1:0:1}" != "-" ]; then
-  exec $DEV_ENV bash -lc "$*"
+  exec "${DEV_ENV[@]}" "$@"
 fi
 
 # Run claude with container plugin and --dangerously-skip-permissions
 # Default model can be overridden by --model in args
-CLAUDE_CMD="claude --plugin-dir /home/dev/container-plugin --dangerously-skip-permissions"
-if [[ "$*" != *"--model"* ]]; then
-  CLAUDE_CMD="$CLAUDE_CMD --model us.anthropic.claude-opus-4-6-v1"
+CLAUDE_ARGS=(
+  --plugin-dir /home/dev/container-plugin
+  --dangerously-skip-permissions
+)
+
+HAS_MODEL=false
+for arg in "$@"; do
+  if [[ "$arg" == "--model" ]]; then
+    HAS_MODEL=true
+    break
+  fi
+done
+
+if [ "$HAS_MODEL" = false ]; then
+  CLAUDE_ARGS+=(--model us.anthropic.claude-opus-4-6-v1)
 fi
-exec $DEV_ENV bash -lc "$CLAUDE_CMD $*"
+
+exec "${DEV_ENV[@]}" claude "${CLAUDE_ARGS[@]}" "$@"
