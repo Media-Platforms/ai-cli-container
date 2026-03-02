@@ -5,6 +5,25 @@ set -euo pipefail
 
 IMAGE="claude-code-dev:latest"
 
+if [[ "${1:-}" == "--help" || "${1:-}" == "-h" ]]; then
+  cat <<'HELP'
+Usage: claude-container [CLAUDE_ARGS...] | [COMMAND...]
+
+Launch Claude Code in a Docker container with your current directory mounted.
+
+  claude-container                Launch Claude Code interactively
+  claude-container --model opus   Pass flags to Claude Code
+  claude-container bash           Run an arbitrary command in the container
+  claude-container aws s3 ls      Use container tools directly
+
+Environment variables (passed through when set):
+  AWS_PROFILE              AWS profile to use
+  AWS_REGION               AWS region for API calls
+  CLAUDE_CODE_USE_BEDROCK  Set to 1 for AWS Bedrock
+HELP
+  exit 0
+fi
+
 # Prerequisite checks
 if ! docker info >/dev/null 2>&1; then
   echo "Error: Docker is not running" >&2
