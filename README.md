@@ -108,7 +108,7 @@ The `claude-container` script automatically mounts:
 - **Base Image**: `debian:bookworm-slim`
 - **User**: `dev` (non-root with sudo access)
 - **Working Directory**: Mirrors your host's current directory
-- **Default Command**: `claude --dangerously-skip-permissions --model 'sonnet[1m]'`
+- **Default Command**: `claude --dangerously-skip-permissions --model us.anthropic.claude-opus-4-6-v1`
 
 ## Troubleshooting
 
