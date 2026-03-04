@@ -6,7 +6,7 @@ A portable Docker-based development environment for running [Claude Code](https:
 
 - **Claude Code CLI** - Latest version installed and ready to use
 - **AWS CLI v2** - For AWS Bedrock integration and other AWS operations
-- **Docker + Docker Compose** - Full Docker support via socket mounting
+- **Docker + Docker Compose** - Filtered Docker access via socket proxy
 - **Python 3 + MCP** - Python debugging support with pre-configured Pdb MCP server
 - **Non-root execution** - Runs as unprivileged `dev` user for security
 - **Volume mounting** - Seamlessly access your host repositories
@@ -101,7 +101,7 @@ The `claude-container` script automatically mounts:
 | `~/.aws` | `/home/dev/.aws` | AWS credentials and config |
 | `~/.claude` | `/home/dev/.claude` | Claude Code settings |
 | `~/.claude.json` | `/home/dev/.claude.json` | Claude API key config |
-| `/var/run/docker.sock` | `/var/run/docker.sock` | Docker daemon access |
+| `/var/run/docker.sock` | `/var/run/docker-real.sock` | Docker daemon (behind proxy) |
 
 ## Container Details
 
@@ -109,6 +109,37 @@ The `claude-container` script automatically mounts:
 - **User**: `dev` (non-root with sudo access)
 - **Working Directory**: Mirrors your host's current directory
 - **Default Command**: `claude --dangerously-skip-permissions --model us.anthropic.claude-opus-4-6-v1`
+
+## Docker Socket Proxy
+
+The container includes a security proxy that sits between Claude and the Docker daemon. Instead of giving Claude unrestricted Docker access, the proxy intercepts Docker API requests and enforces the following restrictions:
+
+### What's Blocked
+
+- **Privileged containers** (`--privileged`)
+- **Dangerous capabilities** (`SYS_ADMIN`, `SYS_PTRACE`, `NET_ADMIN`, `SYS_RAWIO`, `SYS_MODULE`, `DAC_READ_SEARCH`, `ALL`)
+- **Host PID namespace** (`--pid=host`)
+- **Host network mode** (`--network=host`)
+
+### Mount Restrictions
+
+Bind mounts are restricted based on your working directory. Given a working directory of `/home/user/projects/my-app`:
+
+| Path | Mode | Result |
+|------|------|--------|
+| `/home/user/projects/my-app/src` | rw | Allowed |
+| `/home/user/projects/sibling` | ro | Allowed |
+| `/home/user/projects/sibling` | rw | **Rejected** |
+| `/etc/shadow` | any | **Rejected** |
+
+The proxy passes `ALLOWED_MOUNT_BASE` (parent of cwd) and `ALLOWED_RW_BASE` (cwd) to control these restrictions.
+
+### How It Works
+
+1. The host Docker socket is mounted as `/var/run/docker-real.sock` (not the usual path)
+2. On container startup, the entrypoint locks down the real socket (`chmod 700`) so only root can access it
+3. A Python proxy starts in the background, listening on `/var/run/docker.sock`
+4. The `dev` user's Docker CLI talks to the proxy, which validates and forwards requests to the real daemon
 
 ## Troubleshooting
 

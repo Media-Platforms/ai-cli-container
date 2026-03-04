@@ -62,7 +62,11 @@ COPY --chown=dev:dev container-plugin /home/dev/container-plugin
 USER root
 WORKDIR /work
 
-# Entrypoint script: fix docker.sock bind mount perms, drop root privs
+# Docker socket proxy: filter privileged containers and restrict mounts
+COPY docker_socket_proxy.py /usr/local/bin/docker-socket-proxy
+RUN chmod +x /usr/local/bin/docker-socket-proxy
+
+# Entrypoint script: launch proxy, drop root privs
 COPY start-claude /usr/local/bin/start-claude
 RUN chmod +x /usr/local/bin/start-claude
 

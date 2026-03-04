@@ -37,11 +37,12 @@ fi
 
 # Get absolute path of current directory
 PWD_ABS="$(pwd)"
+PWD_PARENT="$(dirname "${PWD_ABS}")"
 
 # Build volume mounts; skip optional paths that don't exist on the host
 VOLUMES=(
   -v "${PWD_ABS}:${PWD_ABS}"
-  -v "/var/run/docker.sock:/var/run/docker.sock"
+  -v "/var/run/docker.sock:/var/run/docker-real.sock"
 )
 [ -d "${HOME}/.aws" ]      && VOLUMES+=(-v "${HOME}/.aws:/home/dev/.aws:ro")
 [ -d "${HOME}/.claude" ]   && VOLUMES+=(-v "${HOME}/.claude:/home/dev/.claude:rw")
@@ -56,6 +57,8 @@ fi
 # Run the dev container
 exec docker run --rm -it \
   "${VOLUMES[@]}" -w "${PWD_ABS}" \
+  -e "ALLOWED_MOUNT_BASE=${PWD_PARENT}" \
+  -e "ALLOWED_RW_BASE=${PWD_ABS}" \
   ${AWS_PROFILE:+-e "AWS_PROFILE=${AWS_PROFILE}"} \
   ${AWS_REGION:+-e "AWS_REGION=${AWS_REGION}"} \
   ${CLAUDE_CODE_USE_BEDROCK:+-e "CLAUDE_CODE_USE_BEDROCK=${CLAUDE_CODE_USE_BEDROCK}"} \
