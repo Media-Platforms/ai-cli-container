@@ -416,9 +416,12 @@ def check_bind_string(bind, allowed_base, rw_base):
     """Validate a Binds entry ('host:container[:opts]').
 
     Returns an error message or None.
+    Named volumes (no leading /) are always allowed.
     """
     parts = bind.split(':')
     host_path = parts[0]
+    if not host_path.startswith('/'):
+        return None
     if not is_allowed_path(host_path, allowed_base):
         return f'bind mount not allowed: {host_path}'
     if not is_allowed_path(host_path, rw_base):
