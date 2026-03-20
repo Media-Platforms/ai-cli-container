@@ -53,13 +53,18 @@ RUN npm install -g @anthropic-ai/claude-code@latest && /usr/local/bin/claude --v
 # Install OpenAI Codex CLI
 RUN npm install -g @openai/codex
 
+# Install Google Gemini CLI
+RUN npm install -g @google/gemini-cli@latest
+
 # Install MCP Python package for pdb_mcp_server (separate layer for caching)
 RUN python3 -m pip install --user --no-cache-dir mcp
 
 # Non-root user
 RUN useradd -ms /bin/bash dev && \
   usermod -aG sudo dev && \
-  echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+  echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+  mkdir -p /home/dev/.gemini /home/dev/.config/gcloud && \
+  chown -R dev:dev /home/dev/.gemini /home/dev/.config
 USER dev
 WORKDIR /work
 
