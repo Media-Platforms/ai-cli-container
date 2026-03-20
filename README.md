@@ -1,6 +1,11 @@
-# Claude Code Dev Container
+# Agentic Coding Dev Container
 
-A portable Docker-based development environment for running [Claude Code](https://claude.ai/claude-code) with AWS Bedrock support. This container provides a consistent, isolated environment with Claude Code CLI, AWS CLI, and Docker tooling pre-installed.
+A portable Docker-based development environment for running
+[Claude Code](https://claude.ai/claude-code),
+[Codex](https://chatgpt.com/codex/), or
+[Gemini](https://geminicli.com)
+safely in YOLO mode . This container provides a consistent, isolated environment with all three
+CLIs, AWS and GitHub CLIs, and Docker tooling pre-installed.
 
 ## Features
 
