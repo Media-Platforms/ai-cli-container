@@ -9,6 +9,9 @@ INSTALL_DIR := $(HOME)/.local/bin
 build:
 	docker build --platform $(PLATFORM) -t $(IMAGE) .
 
+update:
+	docker build --no-cache --platform $(PLATFORM) -t $(IMAGE) .
+
 test:
 	docker build --platform $(PLATFORM) -t $(PROXY_TEST_IMAGE) docker-socket-proxy
 	docker run --rm $(PROXY_TEST_IMAGE)
@@ -21,6 +24,7 @@ install: build
 	@echo "$(PATH)" | tr ":" "\n" | grep -Fqx -e "$(INSTALL_DIR)" -e "$(INSTALL_DIR_DISPLAY)" || { \
 		echo "Add $(INSTALL_DIR_DISPLAY) to your PATH if you want to run these scripts by name."; \
 	}
+	@echo You can \"make update\" to rebuild the container later with current versions of the CLIs.
 
 clean:
 	docker rmi $(IMAGE) 2>/dev/null || true
