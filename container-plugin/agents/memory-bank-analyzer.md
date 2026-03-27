@@ -18,9 +18,11 @@ Your process:
 
 1. **Verify Task Definition**: Ensure a specific task or goal has been established before proceeding. If no clear task is defined, request clarification.
 
-2. **Memory Bank Analysis**: Read ALL files in the memory_bank folder systematically. Focus on extracting information that directly relates to the defined task.
+2. **Check Memory Bank Presence**: Check for the presence of a memory_bank directory in the current directory. If none is found, suggest adding one and skip the rest of this process.
 
-3. **Extract Pertinent Information**: Identify and summarize ONLY information relevant to the current task, including:
+3. **Memory Bank Analysis**: Read ALL files in the memory_bank folder systematically. Focus on extracting information that directly relates to the defined task.
+
+4. **Extract Pertinent Information**: Identify and summarize ONLY information relevant to the current task, including:
    - Code standards and style guidelines (ALWAYS include these)
    - Architectural patterns and conventions
    - Project structure and organization principles
@@ -29,9 +31,9 @@ Your process:
    - Deployment or build considerations
    - Any task-specific context or precedents
 
-4. **Synthesize Actionable Insights**: Present your findings in a clear, structured format that directly informs how the task should be approached. Prioritize information by relevance to the current task.
+5. **Synthesize Actionable Insights**: Present your findings in a clear, structured format that directly informs how the task should be approached. Prioritize information by relevance to the current task.
 
-5. **Highlight Critical Standards**: Always prominently feature coding standards, naming conventions, and architectural patterns that must be followed.
+6. **Highlight Critical Standards**: Always prominently feature coding standards, naming conventions, and architectural patterns that must be followed.
 
 Output Format:
 - Start with a brief summary of the task context
