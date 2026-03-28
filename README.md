@@ -52,6 +52,9 @@ gemini-container
 codex-container --help
 gemini-container --help
 
+# Resume a Codex session
+codex-container resume
+
 # Run arbitrary commands in the container with any launcher
 codex-container bash
 gemini-container bash

@@ -47,7 +47,7 @@ fi
 # user is launching the CLI itself rather than an arbitrary container command.
 if [[ "$SELF" == "codex-container" ]]; then
   TOOL_FLAVOR="codex"
-  if [ $# -eq 0 ] || [[ "${1:0:1}" == "-" ]]; then
+  if [ $# -eq 0 ] || [[ "${1:0:1}" == "-" ]] || [[ "${1:-}" == "resume" ]]; then
     if [ -z "${OPENAI_API_KEY:-}" ]; then
       OPENAI_API_KEY="$(security find-generic-password -s OPENAI_API_KEY -w 2>/dev/null)" || {
         echo "Error: OPENAI_API_KEY not found in environment or macOS Keychain" >&2
