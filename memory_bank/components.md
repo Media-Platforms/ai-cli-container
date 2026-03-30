@@ -110,6 +110,18 @@ If you modify the proxy without touching tests, that is usually a smell.
 Claude subagent prompt telling another agent to read `memory_bank` after a task
 is known. Update this only if the memory-bank workflow itself changes.
 
+### `codex-agents/memory-bank-analyzer.toml`
+
+Codex subagent equivalent of the Claude `agents/memory-bank-analyzer.md`.
+Copied to `~/.codex/agents/` by `start-claude` at container startup.
+Keep in sync with the Claude subagent.
+
+### `gemini-agents/memory-bank-analyzer.md`
+
+Gemini subagent equivalent of the Claude `agents/memory-bank-analyzer.md`.
+Copied to `~/.gemini/agents/` by `start-claude` at container startup.
+Keep in sync with the Claude subagent.
+
 ### `agents/python-test-debugger.md`
 
 Claude subagent prompt for using the MCP Pdb server during difficult Python test

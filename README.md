@@ -276,7 +276,7 @@ The agent has access to the `pdb` MCP server for interactive debugging.
 
 #### memory-bank-analyzer
 
-An agent that extracts project context from `memory_bank/` files before starting implementation work. Claude uses this agent **proactively** after you define a task to:
+Extracts project context from `memory_bank/` files before starting implementation work. It runs **proactively** after you define a task to:
 
 - Extract coding standards and style guidelines
 - Identify architectural patterns and conventions
@@ -284,6 +284,8 @@ An agent that extracts project context from `memory_bank/` files before starting
 - Understand testing approaches and requirements
 
 This ensures implementations follow your project's established patterns and standards.
+
+**Claude** uses this as a subagent loaded via `--plugin-dir`. **Codex** and **Gemini** get equivalent subagents installed at container startup to `~/.codex/agents/` (TOML) and `~/.gemini/agents/` (Markdown) respectively.
 
 ### Included MCP Servers
 

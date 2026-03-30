@@ -46,8 +46,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd -ms /bin/bash dev && \
   usermod -aG sudo dev && \
   echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-  mkdir -p /home/dev/.config/gcloud /home/dev/.gemini /home/dev/.local/bin && \
-  chown -R dev:dev /home/dev/.config /home/dev/.gemini /home/dev/.local
+  mkdir -p /home/dev/.codex /home/dev/.config/gcloud /home/dev/.gemini /home/dev/.local/bin && \
+  chown -R dev:dev /home/dev/.codex /home/dev/.config /home/dev/.gemini /home/dev/.local
 
 # Copy AWS CLI from builder stage
 COPY --from=aws-builder /usr/local/aws-cli /usr/local/aws-cli
