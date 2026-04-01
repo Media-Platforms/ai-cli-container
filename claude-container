@@ -26,7 +26,7 @@ Environment variables (passed through when set):
   AWS_PROFILE              AWS profile to use
   AWS_REGION               AWS region for API calls
   CLAUDE_CODE_USE_BEDROCK  Set to 1 for AWS Bedrock
-  CLAUDE_GITHUB_TOKEN      GitHub personal access token for gh CLI
+  AI_CLI_GITHUB_TOKEN      GitHub personal access token for gh CLI
   OPENAI_API_KEY           OpenAI API key for Codex (falls back to macOS Keychain)
 HELP
   exit 0
@@ -105,7 +105,7 @@ exec docker run --rm -it \
   ${AWS_PROFILE:+-e "AWS_PROFILE=${AWS_PROFILE}"} \
   ${AWS_REGION:+-e "AWS_REGION=${AWS_REGION}"} \
   ${CLAUDE_CODE_USE_BEDROCK:+-e "CLAUDE_CODE_USE_BEDROCK=${CLAUDE_CODE_USE_BEDROCK}"} \
-  ${CLAUDE_GITHUB_TOKEN:+-e "GITHUB_TOKEN=${CLAUDE_GITHUB_TOKEN}"} \
+  ${AI_CLI_GITHUB_TOKEN:+-e "GITHUB_TOKEN=${AI_CLI_GITHUB_TOKEN}"} \
   ${GOOGLE_CLOUD_PROJECT:+-e "GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}"} \
   ${GOOGLE_CLOUD_LOCATION:+-e "GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION}"} \
   ${OPENAI_API_KEY:+-e "OPENAI_API_KEY=${OPENAI_API_KEY}"} \

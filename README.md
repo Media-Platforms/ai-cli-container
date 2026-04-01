@@ -25,7 +25,7 @@ CLIs, AWS and GitHub CLIs, and Docker tooling pre-installed.
 - Docker installed on your host machine
 - (Optional) AWS credentials configured in `~/.aws/` for Bedrock usage
 - (Optional) Claude Code configuration in `~/.claude/` and `~/.claude.json`
-- (Optional) GitHub CLI authenticated via `gh auth login` or `CLAUDE_GITHUB_TOKEN` env var for PR/issue workflows
+- (Optional) GitHub CLI authenticated via `gh auth login` or `AI_CLI_GITHUB_TOKEN` env var for PR/issue workflows
 
 ## Quick Start
 
@@ -81,7 +81,7 @@ The launcher script passes through these environment variables from your host if
 - **`AWS_PROFILE`** - AWS profile to use (from `~/.aws/config`)
 - **`AWS_REGION`** - AWS region for API calls
 - **`CLAUDE_CODE_USE_BEDROCK`** - Set to `1` to use AWS Bedrock instead of Anthropic API
-- **`CLAUDE_GITHUB_TOKEN`** - GitHub personal access token for `gh` CLI (passed as `GITHUB_TOKEN` inside the container)
+- **`AI_CLI_GITHUB_TOKEN`** - GitHub personal access token for `gh` CLI (passed as `GITHUB_TOKEN` inside the container)
 - **`GOOGLE_CLOUD_PROJECT`** - Google Cloud project ID for Gemini CLI Vertex usage
 - **`GOOGLE_CLOUD_LOCATION`** - Google Cloud region for Gemini CLI Vertex usage
 - **`OPENAI_API_KEY`** - OpenAI API key for Codex CLI (falls back to macOS Keychain if not set)
@@ -193,10 +193,10 @@ gh auth login
 
 This stores credentials in `~/.config/gh/` which the container mounts automatically.
 
-**Option 2: `CLAUDE_GITHUB_TOKEN` environment variable**
+**Option 2: `AI_CLI_GITHUB_TOKEN` environment variable**
 
 ```bash
-export CLAUDE_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+export AI_CLI_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 claude-container
 ```
 
