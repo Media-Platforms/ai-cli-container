@@ -52,6 +52,16 @@ EOF
   } > "$dest_file"
 }
 
+lookup_macos_keychain_secret() {
+  local service="$1"
+
+  if ! command -v security >/dev/null 2>&1; then
+    return 1
+  fi
+
+  security find-generic-password -s "$service" -w 2>/dev/null
+}
+
 trap cleanup EXIT
 
 if [[ "${1:-}" == "--container-help" || "${1:-}" == "-H" ]]; then
@@ -73,7 +83,7 @@ Environment variables (passed through when set):
   AWS_PROFILE              AWS profile to use
   AWS_REGION               AWS region for API calls
   CLAUDE_CODE_USE_BEDROCK  Set to 1 for AWS Bedrock
-  AI_CLI_GITHUB_TOKEN      GitHub personal access token for gh CLI
+  AI_CLI_GITHUB_TOKEN      GitHub personal access token for gh CLI (falls back to macOS Keychain)
   OPENAI_API_KEY           OpenAI API key for Codex (falls back to macOS Keychain)
 HELP
   exit 0
@@ -90,13 +100,17 @@ if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
   exit 1
 fi
 
+if [ -z "${AI_CLI_GITHUB_TOKEN:-}" ]; then
+  AI_CLI_GITHUB_TOKEN="$(lookup_macos_keychain_secret AI_CLI_GITHUB_TOKEN || true)"
+fi
+
 # When invoked as an alternate launcher, inject the CLI command only when the
 # user is launching the CLI itself rather than an arbitrary container command.
 if [[ "$SELF" == "codex-container" ]]; then
   TOOL_FLAVOR="codex"
   if [ $# -eq 0 ] || [[ "${1:0:1}" == "-" ]] || [[ "${1:-}" == "resume" ]]; then
     if [ -z "${OPENAI_API_KEY:-}" ]; then
-      OPENAI_API_KEY="$(security find-generic-password -s OPENAI_API_KEY -w 2>/dev/null)" || {
+      OPENAI_API_KEY="$(lookup_macos_keychain_secret OPENAI_API_KEY)" || {
         echo "Error: OPENAI_API_KEY not found in environment or macOS Keychain" >&2
         echo "  Store it with: security add-generic-password -s OPENAI_API_KEY -a openai -w 'sk-...'" >&2
         exit 1

@@ -25,7 +25,7 @@ CLIs, AWS and GitHub CLIs, and Docker tooling pre-installed.
 - Docker installed on your host machine
 - (Optional) AWS credentials configured in `~/.aws/` for Bedrock usage
 - (Optional) Claude Code configuration in `~/.claude/` and `~/.claude.json`
-- (Optional) GitHub CLI authenticated via `gh auth login` or `AI_CLI_GITHUB_TOKEN` env var for PR/issue workflows
+- (Optional) GitHub CLI authenticated via `gh auth login`, `AI_CLI_GITHUB_TOKEN`, or macOS Keychain for PR/issue workflows
 
 ## Quick Start
 
@@ -72,7 +72,8 @@ claude-container aws s3 ls
 The launcher script mounts your config and auth token directories, so for Claude or Gemini you can
 just SSO before starting the container.
 
-For Codex, the script will export OPENAI_API_KEY from your environment, or from your macOS Keychain.
+For Codex, the script will export `OPENAI_API_KEY` from your environment, or from your macOS Keychain.
+For GitHub CLI workflows, it will export `AI_CLI_GITHUB_TOKEN` from your environment, or from your macOS Keychain, as `GITHUB_TOKEN` inside the container.
 
 ### Environment Variables
 
@@ -81,7 +82,7 @@ The launcher script passes through these environment variables from your host if
 - **`AWS_PROFILE`** - AWS profile to use (from `~/.aws/config`)
 - **`AWS_REGION`** - AWS region for API calls
 - **`CLAUDE_CODE_USE_BEDROCK`** - Set to `1` to use AWS Bedrock instead of Anthropic API
-- **`AI_CLI_GITHUB_TOKEN`** - GitHub personal access token for `gh` CLI (passed as `GITHUB_TOKEN` inside the container)
+- **`AI_CLI_GITHUB_TOKEN`** - GitHub personal access token for `gh` CLI (passed as `GITHUB_TOKEN` inside the container, falls back to macOS Keychain if not set)
 - **`GOOGLE_CLOUD_PROJECT`** - Google Cloud project ID for Gemini CLI Vertex usage
 - **`GOOGLE_CLOUD_LOCATION`** - Google Cloud region for Gemini CLI Vertex usage
 - **`OPENAI_API_KEY`** - OpenAI API key for Codex CLI (falls back to macOS Keychain if not set)
@@ -193,11 +194,17 @@ gh auth login
 
 This stores credentials in `~/.config/gh/` which the container mounts automatically.
 
-**Option 2: `AI_CLI_GITHUB_TOKEN` environment variable**
+**Option 2: `AI_CLI_GITHUB_TOKEN` environment variable or macOS Keychain**
 
 ```bash
 export AI_CLI_GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 claude-container
+```
+
+To store the same token in your macOS Keychain instead:
+
+```bash
+security add-generic-password -s AI_CLI_GITHUB_TOKEN -a github -w 'ghp_...'
 ```
 
 Required token scopes:
