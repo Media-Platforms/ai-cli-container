@@ -43,6 +43,8 @@ should not look for web routes, API handlers, or business-domain models here.
 - `Makefile`: Build, update, test, install, and clean entry points
 - `Dockerfile`: Multi-stage image build and installed toolchain
 - `claude-container`: Host launcher script used directly and via hard links
+- `~/.local/share/ai-cli-container/`: Host-installed launcher support assets
+  created by `make install` (inference from `Makefile`)
 - `start-ai-cli`: Container entrypoint that starts the proxy and execs the tool
 - `container-plugin/`: Claude plugin assets, including subagent prompts and the
   Pdb MCP server plus tests
@@ -65,7 +67,9 @@ The implementation suggests these priorities, in order:
 `claude-container` is the real script. `codex-container` and `gemini-container`
 are expected to be hard links pointing to the same file. The script uses its own
 basename to decide which CLI flavor to launch and which credentials/config
-directories to mount.
+directories to mount. `make install` also places host-side support assets under
+`~/.local/share/ai-cli-container/` for launcher features that need a stable host
+path.
 
 ### The current working directory is the main writable mount
 

@@ -29,7 +29,7 @@ CLIs, AWS and GitHub CLIs, and Docker tooling pre-installed.
 
 ## Quick Start
 
-Clone or download this repo, `cd` into it, and run `make install`. This installs `claude-container`, `codex-container`, and `gemini-container` into `~/.local/bin` as hard links to the same script, which auto-selects the right CLI. If `~/.local/bin` is not already on your `PATH`, the install step prints a reminder.
+Clone or download this repo, `cd` into it, and run `make install`. This installs `claude-container`, `codex-container`, and `gemini-container` into `~/.local/bin` as hard links to the same script, and installs launcher support assets under `~/.local/share/ai-cli-container/`. If `~/.local/bin` is not already on your `PATH`, the install step prints a reminder.
 
 ## Usage
 
@@ -285,7 +285,7 @@ Extracts project context from `memory_bank/` files before starting implementatio
 
 This ensures implementations follow your project's established patterns and standards.
 
-**Claude** uses this as a subagent loaded via `--plugin-dir`. **Gemini** gets an equivalent subagent installed at container startup to `~/.gemini/agents/` (Markdown). For **Codex**, the launcher generates a temporary `AGENTS.override.md` that merges any existing host global instructions with the injected memory-bank rule for that run. It also mounts the bundled `memory-bank-analyzer.toml` only when the host `~/.codex/agents/` does not already define that agent, so user customizations keep precedence while host `~/.codex` state still persists normally.
+**Claude** uses this as a subagent loaded via `--plugin-dir`. **Gemini** gets an equivalent subagent installed at container startup to `~/.gemini/agents/` (Markdown). For **Codex**, the launcher generates a temporary `AGENTS.override.md` that merges any existing host global instructions with the injected memory-bank rule for that run. It mounts the bundled `memory-bank-analyzer.toml` from the installed support assets only when the host `~/.codex/agents/` does not already define that agent, so user customizations keep precedence while host `~/.codex` state still persists normally.
 
 ### Included MCP Servers
 
