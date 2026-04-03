@@ -28,7 +28,7 @@ exists to constrain layer 3.
 
 ### 2. Container entrypoint
 
-The image entrypoint is `start-claude`. It starts as root and:
+The image entrypoint is `start-ai-cli`. It starts as root and:
 
 1. Defines a PATH that preserves `/home/dev/.local/bin` when using `sudo`.
 2. Checks whether `/var/run/docker-real.sock` exists.
@@ -79,7 +79,7 @@ Owns host concerns:
 - current directory and parent-directory access policy
 - flavor-specific setup for Claude/Codex/Gemini
 
-### `start-claude`
+### `start-ai-cli`
 
 Owns in-container concerns:
 

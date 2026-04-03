@@ -43,7 +43,9 @@ should not look for web routes, API handlers, or business-domain models here.
 - `Makefile`: Build, update, test, install, and clean entry points
 - `Dockerfile`: Multi-stage image build and installed toolchain
 - `claude-container`: Host launcher script used directly and via hard links
-- `start-claude`: Container entrypoint that starts the proxy and execs the tool
+- `~/.local/share/ai-cli-container/`: Host-installed launcher support assets
+  created by `make install` (inference from `Makefile`)
+- `start-ai-cli`: Container entrypoint that starts the proxy and execs the tool
 - `container-plugin/`: Claude plugin assets, including subagent prompts and the
   Pdb MCP server plus tests
 - `docker-socket-proxy/`: Docker API policy proxy and its tests
@@ -65,7 +67,9 @@ The implementation suggests these priorities, in order:
 `claude-container` is the real script. `codex-container` and `gemini-container`
 are expected to be hard links pointing to the same file. The script uses its own
 basename to decide which CLI flavor to launch and which credentials/config
-directories to mount.
+directories to mount. `make install` also places host-side support assets under
+`~/.local/share/ai-cli-container/` for launcher features that need a stable host
+path.
 
 ### The current working directory is the main writable mount
 
@@ -91,7 +95,7 @@ validates `POST /containers/create` requests.
 Only the default Claude entrypoint path wires in `--plugin-dir
 /home/dev/container-plugin` automatically. Codex and Gemini are launched
 directly by the host launcher when selected, not through the `claude` wrapper
-path in `start-claude`.
+path in `start-ai-cli`.
 
 ## Maintenance Reality
 
@@ -100,7 +104,7 @@ However, several files are behaviorally coupled:
 
 - `README.md`, `Makefile`, and `claude-container` must agree on install and
   usage behavior
-- `Dockerfile` and `start-claude` must agree on installed paths and runtime
+- `Dockerfile` and `start-ai-cli` must agree on installed paths and runtime
   user assumptions
 - `docker_socket_proxy.py` and its tests are tightly paired; policy changes
   should come with tests

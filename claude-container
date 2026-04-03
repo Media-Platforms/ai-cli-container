@@ -6,6 +6,53 @@ set -euo pipefail
 IMAGE="claude-code-dev:latest"
 SELF="$(basename "$0")"
 TOOL_FLAVOR="claude"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SUPPORT_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/ai-cli-container"
+CODEX_AGENT_ASSET="${SUPPORT_DIR}/codex-agents/memory-bank-analyzer.toml"
+if [ ! -f "$CODEX_AGENT_ASSET" ] && [ -f "${SCRIPT_DIR}/container-plugin/codex-agents/memory-bank-analyzer.toml" ]; then
+  CODEX_AGENT_ASSET="${SCRIPT_DIR}/container-plugin/codex-agents/memory-bank-analyzer.toml"
+fi
+TMP_CODEX_OVERRIDE=""
+TMP_CODEX_AGENTS_DIR=""
+
+cleanup() {
+  if [ -n "$TMP_CODEX_OVERRIDE" ] && [ -f "$TMP_CODEX_OVERRIDE" ]; then
+    rm -f "$TMP_CODEX_OVERRIDE"
+  fi
+  if [ -n "$TMP_CODEX_AGENTS_DIR" ] && [ -d "$TMP_CODEX_AGENTS_DIR" ]; then
+    rm -rf "$TMP_CODEX_AGENTS_DIR"
+  fi
+}
+
+render_codex_override() {
+  local host_codex_dir="$1"
+  local dest_file="$2"
+
+  {
+    if [ -d "$host_codex_dir" ] && [ -s "${host_codex_dir}/AGENTS.override.md" ]; then
+      cat "${host_codex_dir}/AGENTS.override.md"
+      printf '\n\n'
+    elif [ -d "$host_codex_dir" ] && [ -s "${host_codex_dir}/AGENTS.md" ]; then
+      cat "${host_codex_dir}/AGENTS.md"
+      printf '\n\n'
+    fi
+
+    cat <<'EOF'
+# Global Codex Instructions
+
+For any engineering task that involves implementing, changing, debugging, refactoring, testing, or reviewing code:
+
+1. Before doing code analysis or edits, check whether the current working directory contains a `memory_bank/` directory.
+2. If `memory_bank/` exists, immediately use the `memory-bank-analyzer` agent as the first sub-agent step after the task is defined.
+3. Read and summarize the agent's findings, then continue with the task using that context.
+4. If `memory_bank/` does not exist, note that briefly and proceed normally.
+
+This rule applies across repositories.
+EOF
+  } > "$dest_file"
+}
+
+trap cleanup EXIT
 
 if [[ "${1:-}" == "--container-help" || "${1:-}" == "-H" ]]; then
   cat <<HELP
@@ -82,7 +129,25 @@ fi
 [ -d "${HOME}/.config/gh" ] && VOLUMES+=(-v "${HOME}/.config/gh:/home/dev/.config/gh:ro")
 
 if [ "$TOOL_FLAVOR" = "codex" ]; then
-  [ -d "${HOME}/.codex" ] && VOLUMES+=(-v "${HOME}/.codex:/home/dev/.codex:rw")
+  TMP_CODEX_OVERRIDE="$(mktemp "${TMPDIR:-/tmp}/codex-agents-override.XXXXXX.md")"
+  if [ -d "${HOME}/.codex" ]; then
+    VOLUMES+=(-v "${HOME}/.codex:/home/dev/.codex:rw")
+    render_codex_override "${HOME}/.codex" "$TMP_CODEX_OVERRIDE"
+  else
+    render_codex_override "" "$TMP_CODEX_OVERRIDE"
+  fi
+  VOLUMES+=(-v "${TMP_CODEX_OVERRIDE}:/home/dev/.codex/AGENTS.override.md:ro")
+  if [ ! -f "${HOME}/.codex/agents/memory-bank-analyzer.toml" ] && [ -f "$CODEX_AGENT_ASSET" ]; then
+    if [ -d "${HOME}/.codex/agents" ]; then
+      VOLUMES+=(-v "${CODEX_AGENT_ASSET}:/home/dev/.codex/agents/memory-bank-analyzer.toml:ro")
+    else
+      TMP_CODEX_AGENTS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/codex-agents.XXXXXX")"
+      cp "$CODEX_AGENT_ASSET" "${TMP_CODEX_AGENTS_DIR}/memory-bank-analyzer.toml"
+      VOLUMES+=(-v "${TMP_CODEX_AGENTS_DIR}:/home/dev/.codex/agents:rw")
+    fi
+  elif [ ! -f "${HOME}/.codex/agents/memory-bank-analyzer.toml" ]; then
+    echo "Warning: bundled Codex agent asset not found at ${CODEX_AGENT_ASSET}; memory-bank-analyzer will not be injected" >&2
+  fi
 elif [ "$TOOL_FLAVOR" = "gemini" ]; then
   [ -d "${HOME}/.gemini" ] && VOLUMES+=(-v "${HOME}/.gemini:/home/dev/.gemini:rw")
   [ -d "${HOME}/.config/gcloud" ] && VOLUMES+=(-v "${HOME}/.config/gcloud:/home/dev/.config/gcloud:rw")
@@ -98,7 +163,7 @@ else
 fi
 
 # Run the dev container
-exec docker run --rm -it \
+docker run --rm -it \
   "${VOLUMES[@]}" -w "${PWD_ABS}" \
   -e "ALLOWED_MOUNT_BASE=${PWD_PARENT}" \
   -e "ALLOWED_RW_BASE=${PWD_ABS}" \
@@ -110,3 +175,5 @@ exec docker run --rm -it \
   ${GOOGLE_CLOUD_LOCATION:+-e "GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION}"} \
   ${OPENAI_API_KEY:+-e "OPENAI_API_KEY=${OPENAI_API_KEY}"} \
   "$IMAGE" "$@"
+STATUS=$?
+exit "$STATUS"

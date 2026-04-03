@@ -39,7 +39,7 @@ into one of these buckets:
 
 - Host-side launcher behavior: `claude-container`
 - Container image contents or defaults: `Dockerfile`
-- Container startup and privilege dropping: `start-claude`
+- Container startup and privilege dropping: `start-ai-cli`
 - Docker API restrictions: `docker-socket-proxy/docker_socket_proxy.py`
 - Claude plugin assets and MCP tooling: `container-plugin/`
 

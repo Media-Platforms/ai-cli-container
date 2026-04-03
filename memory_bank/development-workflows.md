@@ -14,7 +14,7 @@ Examples:
 Suggested sequence:
 
 1. Read `claude-container` and confirm whether the behavior is host-side.
-2. Check whether `start-claude` also needs to change for in-container handling.
+2. Check whether `start-ai-cli` also needs to change for in-container handling.
 3. Update `README.md` if user-visible behavior changes.
 4. Update memory-bank docs if the change affects future agent decision-making.
 5. Validate shell syntax and, if possible, exercise the launcher path safely.
@@ -49,7 +49,7 @@ Things to watch:
 - Keep layers intentional; build-time-only dependencies should not leak into the
   final image unnecessarily.
 - Match install user context to where the tool expects to live.
-- If a path is referenced later by `start-claude`, `README.md`, or tests, keep
+- If a path is referenced later by `start-ai-cli`, `README.md`, or tests, keep
   those in sync.
 
 ## Workflow: Tighten Or Relax Docker Safety Policy
