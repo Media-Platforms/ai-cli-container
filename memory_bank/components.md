@@ -62,7 +62,7 @@ This script is a host-side compatibility surface. Be careful with shell
 portability and quoting. It already uses strict mode and array-based volume
 assembly; preserve that style.
 
-### `start-claude`
+### `start-ai-cli`
 
 Edit this when changing:
 
@@ -113,13 +113,13 @@ is known. Update this only if the memory-bank workflow itself changes.
 ### `codex-agents/memory-bank-analyzer.toml`
 
 Codex subagent equivalent of the Claude `agents/memory-bank-analyzer.md`.
-Copied to `~/.codex/agents/` by `start-claude` at container startup.
+Copied to `~/.codex/agents/` by `start-ai-cli` at container startup.
 Keep in sync with the Claude subagent.
 
 ### `gemini-agents/memory-bank-analyzer.md`
 
 Gemini subagent equivalent of the Claude `agents/memory-bank-analyzer.md`.
-Copied to `~/.gemini/agents/` by `start-claude` at container startup.
+Copied to `~/.gemini/agents/` by `start-ai-cli` at container startup.
 Keep in sync with the Claude subagent.
 
 ### `agents/python-test-debugger.md`
@@ -173,7 +173,7 @@ Also consider:
 
 ### “I need to change the default Claude invocation.”
 
-Primary file: `start-claude`
+Primary file: `start-ai-cli`
 
 Also consider whether the behavior should differ for arbitrary commands versus
 interactive Claude startup.
@@ -207,7 +207,7 @@ Primary files:
 
 ## Files That Are Deliberately Small But Important
 
-- `start-claude`: short, but central to runtime security posture
+- `start-ai-cli`: short, but central to runtime security posture
 - `claude-container`: short, but defines most host/container integration behavior
 - `Makefile`: short, but part of the supported UX
 

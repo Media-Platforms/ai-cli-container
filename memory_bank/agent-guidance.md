@@ -7,7 +7,7 @@ this behavior.”
 
 Most mistakes in this repo come from editing the wrong layer:
 
-- host concern edited in `start-claude` instead of `claude-container`
+- host concern edited in `start-ai-cli` instead of `claude-container`
 - image-content concern edited in the launcher instead of `Dockerfile`
 - Docker policy concern edited in docs without changing the proxy
 - Claude-plugin concern edited in generic runtime code
@@ -21,7 +21,7 @@ Ask these questions in order:
 2. Does it change what exists inside the image?
    If yes, start with `Dockerfile`.
 3. Does it change what happens at container boot, before the main tool runs?
-   If yes, start with `start-claude`.
+   If yes, start with `start-ai-cli`.
 4. Does it change what nested Docker commands are allowed to do?
    If yes, start with `docker-socket-proxy/docker_socket_proxy.py`.
 5. Does it change Claude-specific subagents or the Pdb MCP server?
@@ -54,7 +54,7 @@ environment allows.
   selected by basename.
 - `codex-container` injects `codex --yolo` only when the command looks like a
   normal Codex CLI launch, not when running an arbitrary command such as `bash`.
-- `start-claude` only wraps Claude when the first arg is empty or starts with
+- `start-ai-cli` only wraps Claude when the first arg is empty or starts with
   `-`. A direct command bypasses Claude-specific defaults and plugin injection.
 - Docker proxy write access is limited to the current working directory; sibling
   directories under the same parent may only be mounted read-only.
@@ -77,6 +77,6 @@ Common failure modes:
 - adding environment handling in multiple places without a clear owner
 - changing Docker policy without adding rejection-path tests
 - documenting behavior that the code does not actually implement
-- patching around a symptom in `start-claude` when the real issue is in the host
+- patching around a symptom in `start-ai-cli` when the real issue is in the host
   launcher
 - forgetting that the repo supports three tool flavors, not just Claude

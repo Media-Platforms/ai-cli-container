@@ -81,7 +81,7 @@ COPY docker-socket-proxy/docker_socket_proxy.py /usr/local/bin/docker-socket-pro
 RUN chmod +x /usr/local/bin/docker-socket-proxy
 
 # Entrypoint script: launch proxy, drop root privs
-COPY start-claude /usr/local/bin/start-claude
-RUN chmod +x /usr/local/bin/start-claude
+COPY start-ai-cli /usr/local/bin/start-ai-cli
+RUN chmod +x /usr/local/bin/start-ai-cli
 
-ENTRYPOINT ["/usr/local/bin/start-claude"]
+ENTRYPOINT ["/usr/local/bin/start-ai-cli"]
