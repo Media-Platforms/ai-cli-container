@@ -143,7 +143,7 @@ fi
 [ -d "${HOME}/.config/gh" ] && VOLUMES+=(-v "${HOME}/.config/gh:/home/dev/.config/gh:ro")
 
 if [ "$TOOL_FLAVOR" = "codex" ]; then
-  TMP_CODEX_OVERRIDE="$(mktemp "${TMPDIR:-/tmp}/codex-agents-override.XXXXXX.md")"
+  TMP_CODEX_OVERRIDE="$(mktemp "${TMPDIR:-/tmp}/codex-agents-override.XXXXXX")"
   if [ -d "${HOME}/.codex" ]; then
     VOLUMES+=(-v "${HOME}/.codex:/home/dev/.codex:rw")
     render_codex_override "${HOME}/.codex" "$TMP_CODEX_OVERRIDE"
