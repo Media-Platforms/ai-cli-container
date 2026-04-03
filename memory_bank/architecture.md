@@ -19,7 +19,9 @@ exists to constrain layer 3.
 
 1. Detect which tool flavor is requested from `basename "$0"`.
 2. Fail early if Docker is unavailable or the image is missing.
-3. For Codex, source `OPENAI_API_KEY` from the environment or macOS Keychain if
+3. Source `AI_CLI_GITHUB_TOKEN` from the environment or macOS Keychain when
+   available so `gh` can authenticate inside the container.
+4. For Codex, source `OPENAI_API_KEY` from the environment or macOS Keychain if
    the command being launched is the Codex CLI itself.
 4. Build a set of bind mounts based on the current directory and which optional
    host config paths exist.
@@ -146,8 +148,9 @@ more work to happen as root should be scrutinized.
   `ALLOWED_MOUNT_BASE` and `ALLOWED_RW_BASE` values.
 - The Pdb MCP server assumes Docker Compose is available inside the dev
   container.
-- The Codex launcher currently assumes a macOS host if `OPENAI_API_KEY` is not
-  already set, because it shells out to `security find-generic-password`.
+- The launcher currently assumes a macOS host for keychain-based auth fallback
+  (`AI_CLI_GITHUB_TOKEN` and `OPENAI_API_KEY`), because it shells out to
+  `security find-generic-password`.
 
 That last point matters for portability changes. If a task involves Linux-host
 support for Codex auth fallback, the host launcher is the primary edit surface.
