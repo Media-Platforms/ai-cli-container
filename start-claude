@@ -19,20 +19,6 @@ fi
 # Inject memory-bank support for Codex / Gemini CLI launches
 if [ $# -gt 0 ]; then
   case "$1" in
-    codex)
-      # Codex supports subagents via ~/.codex/agents/*.toml
-      SRC_DIR=/home/dev/container-plugin/codex-agents
-      DEST_DIR=/home/dev/.codex/agents
-      if [ -d "$SRC_DIR" ]; then
-        mkdir -p "$DEST_DIR"
-        for agent in "$SRC_DIR"/*.toml; do
-          [ -f "$agent" ] || continue
-          DEST="$DEST_DIR/$(basename "$agent")"
-          [ -f "$DEST" ] || cp "$agent" "$DEST"
-        done
-        chown -R dev:dev /home/dev/.codex
-      fi
-      ;;
     gemini)
       # Gemini supports subagents via .gemini/agents/*.md
       SRC_DIR=/home/dev/container-plugin/gemini-agents
