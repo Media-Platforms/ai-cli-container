@@ -7,7 +7,7 @@ this behavior.”
 
 Most mistakes in this repo come from editing the wrong layer:
 
-- host concern edited in `start-ai-cli` instead of `claude-container`
+- host concern edited in `start-ai-cli` instead of `ai-cli-container`
 - image-content concern edited in the launcher instead of `Dockerfile`
 - Docker policy concern edited in docs without changing the proxy
 - Claude-plugin concern edited in generic runtime code
@@ -17,7 +17,7 @@ Most mistakes in this repo come from editing the wrong layer:
 Ask these questions in order:
 
 1. Does the behavior happen before `docker run` starts?
-   If yes, start with `claude-container`.
+   If yes, start with `ai-cli-container`.
 2. Does it change what exists inside the image?
    If yes, start with `Dockerfile`.
 3. Does it change what happens at container boot, before the main tool runs?

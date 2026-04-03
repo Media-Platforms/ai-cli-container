@@ -42,7 +42,8 @@ should not look for web routes, API handlers, or business-domain models here.
 - `README.md`: User-facing setup and usage documentation
 - `Makefile`: Build, update, test, install, and clean entry points
 - `Dockerfile`: Multi-stage image build and installed toolchain
-- `claude-container`: Host launcher script used directly and via hard links
+- `ai-cli-container`: Host launcher script, installed as `claude-container`,
+  `codex-container`, and `gemini-container` via hard links
 - `~/.local/share/ai-cli-container/`: Host-installed launcher support assets
   created by `make install` (inference from `Makefile`)
 - `start-ai-cli`: Container entrypoint that starts the proxy and execs the tool
@@ -64,8 +65,8 @@ The implementation suggests these priorities, in order:
 
 ### Launcher selection is name-based
 
-`claude-container` is the real script. `codex-container` and `gemini-container`
-are expected to be hard links pointing to the same file. The script uses its own
+`ai-cli-container` is the source script in the repo. `make install` copies it as
+`claude-container` and hard-links `codex-container` and `gemini-container` to it. The script uses its own
 basename to decide which CLI flavor to launch and which credentials/config
 directories to mount. `make install` also places host-side support assets under
 `~/.local/share/ai-cli-container/` for launcher features that need a stable host
@@ -102,7 +103,7 @@ path in `start-ai-cli`.
 This is a small repo with a low file count, so broad refactors are feasible.
 However, several files are behaviorally coupled:
 
-- `README.md`, `Makefile`, and `claude-container` must agree on install and
+- `README.md`, `Makefile`, and `ai-cli-container` must agree on install and
   usage behavior
 - `Dockerfile` and `start-ai-cli` must agree on installed paths and runtime
   user assumptions

@@ -13,7 +13,7 @@ Examples:
 
 Suggested sequence:
 
-1. Read `claude-container` and confirm whether the behavior is host-side.
+1. Read `ai-cli-container` and confirm whether the behavior is host-side.
 2. Check whether `start-ai-cli` also needs to change for in-container handling.
 3. Update `README.md` if user-visible behavior changes.
 4. Update memory-bank docs if the change affects future agent decision-making.
@@ -39,7 +39,7 @@ Suggested sequence:
 
 1. Edit `Dockerfile`.
 2. Decide whether the installed tool needs host config mounting in
-   `claude-container`.
+   `ai-cli-container`.
 3. Decide whether the entrypoint needs to expose or wrap it.
 4. Update docs.
 5. Build the image or, at minimum, sanity-check the Dockerfile logic.

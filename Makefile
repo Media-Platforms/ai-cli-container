@@ -21,7 +21,7 @@ test:
 install: build
 	mkdir -p "$(INSTALL_DIR)"
 	mkdir -p "$(SUPPORT_DIR)/codex-agents"
-	install -m 755 claude-container "$(INSTALL_DIR)/claude-container"
+	install -m 755 ai-cli-container "$(INSTALL_DIR)/claude-container"
 	ln -f "$(INSTALL_DIR)/claude-container" "$(INSTALL_DIR)/codex-container"
 	ln -f "$(INSTALL_DIR)/claude-container" "$(INSTALL_DIR)/gemini-container"
 	install -m 644 container-plugin/codex-agents/*.toml "$(SUPPORT_DIR)/codex-agents/"

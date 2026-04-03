@@ -62,7 +62,7 @@ Ideal expectation:
 
 - add focused tests for any new lifecycle or protocol behavior
 
-### If you change `Dockerfile`, `claude-container`, or `start-ai-cli`
+### If you change `Dockerfile`, `ai-cli-container`, or `start-ai-cli`
 
 Minimum expectation:
 
@@ -71,7 +71,7 @@ Minimum expectation:
 Examples:
 
 - `docker build ...` for `Dockerfile`
-- `bash -n claude-container start-ai-cli` for shell changes
+- `bash -n ai-cli-container start-ai-cli` for shell changes
 - a targeted manual smoke test if the environment allows it
 
 Because these files define runtime behavior rather than pure library logic, some
@@ -94,7 +94,7 @@ make build
 make test
 python3 -m pytest container-plugin/test_pdb_mcp_server.py
 python3 -m pytest docker-socket-proxy/test_docker_socket_proxy.py
-bash -n claude-container
+bash -n ai-cli-container
 bash -n start-ai-cli
 ```
 

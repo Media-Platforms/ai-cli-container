@@ -47,7 +47,7 @@ Edit this when changing:
 Avoid making host-launch decisions here. `Dockerfile` should describe the image,
 not host environment discovery.
 
-### `claude-container`
+### `ai-cli-container` (installed as `claude-container`)
 
 Edit this when changing:
 
@@ -114,7 +114,7 @@ is known. Update this only if the memory-bank workflow itself changes.
 
 Codex subagent equivalent of the Claude `agents/memory-bank-analyzer.md`.
 Installed to `~/.local/share/ai-cli-container/codex-agents/` by `make install`
-and mounted into Codex by `claude-container` only when the host `~/.codex`
+and mounted into Codex by the host launcher only when the host `~/.codex`
 does not already define `memory-bank-analyzer.toml`.
 Keep in sync with the Claude subagent.
 
@@ -156,7 +156,7 @@ As with the proxy, behavior changes here should normally come with tests.
 
 ### “I need to change what gets mounted into the container.”
 
-Primary file: `claude-container`
+Primary file: `ai-cli-container`
 
 Also consider:
 
@@ -170,7 +170,7 @@ Primary file: `Dockerfile`
 Also consider:
 
 - whether the tool belongs under `dev` or root ownership
-- whether host config for that tool also needs mounting in `claude-container`
+- whether host config for that tool also needs mounting in `ai-cli-container`
 - whether `README.md` should expose it
 
 ### “I need to change the default Claude invocation.”
@@ -185,7 +185,7 @@ interactive Claude startup.
 Primary files:
 
 - `Makefile`
-- `claude-container`
+- `ai-cli-container`
 - `README.md`
 
 Potentially `Dockerfile` only if the new tool must be installed in the image.
@@ -210,7 +210,7 @@ Primary files:
 ## Files That Are Deliberately Small But Important
 
 - `start-ai-cli`: short, but central to runtime security posture
-- `claude-container`: short, but defines most host/container integration behavior
+- `ai-cli-container`: short, but defines most host/container integration behavior
 - `Makefile`: short, but part of the supported UX
 
 Agents should not mistake file length for low importance.

@@ -37,7 +37,7 @@ Docker through a filtered Unix socket proxy.
 The codebase is small but the behavior is security-sensitive. Most changes fall
 into one of these buckets:
 
-- Host-side launcher behavior: `claude-container`
+- Host-side launcher behavior: `ai-cli-container`
 - Container image contents or defaults: `Dockerfile`
 - Container startup and privilege dropping: `start-ai-cli`
 - Docker API restrictions: `docker-socket-proxy/docker_socket_proxy.py`

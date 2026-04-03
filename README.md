@@ -107,7 +107,7 @@ AWS_PROFILE=prod AWS_REGION=us-east-1 CLAUDE_CODE_USE_BEDROCK=1 claude-container
 
 ## What Gets Mounted
 
-The `claude-container` script automatically mounts:
+The launcher script automatically mounts:
 
 | Host Path | Container Path | Purpose |
 |-----------|---------------|---------|

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# claude-container — launch the Claude Code dev container from any repo
+# ai-cli-container — launch an AI coding CLI in a Docker container
 
 set -euo pipefail
 

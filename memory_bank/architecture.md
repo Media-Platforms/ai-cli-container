@@ -15,7 +15,8 @@ exists to constrain layer 3.
 
 ### 1. Host-side launcher
 
-`claude-container` runs on the host and performs these steps:
+The host launcher (`ai-cli-container`, installed as `claude-container`) runs on
+the host and performs these steps:
 
 1. Detect which tool flavor is requested from `basename "$0"`.
 2. Fail early if Docker is unavailable or the image is missing.
@@ -71,7 +72,7 @@ Builds a `node:bookworm-slim`-based runtime image with:
 The image switches between `root` and `dev` during build so install steps happen
 under the right user context.
 
-### `claude-container`
+### `ai-cli-container` (installed as `claude-container`)
 
 Owns host concerns:
 
