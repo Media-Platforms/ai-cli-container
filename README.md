@@ -125,6 +125,7 @@ The launcher script automatically mounts:
 ## Container Details
 
 - **Base Image**: `debian:bookworm-slim`
+- **Container Name**: `<tool>-<current-directory>-<launcher-pid>` (directory name is sanitized for Docker)
 - **User**: `dev` (non-root with sudo access)
 - **Working Directory**: Mirrors your host's current directory
 - **Default Command**: `claude --dangerously-skip-permissions --model us.anthropic.claude-opus-4-6-v1`

@@ -128,6 +128,10 @@ fi
 # Get absolute path of current directory
 PWD_ABS="$(pwd)"
 PWD_PARENT="$(dirname "${PWD_ABS}")"
+PWD_NAME="$(basename "${PWD_ABS}")"
+CONTAINER_DIR_NAME="$(printf '%s' "$PWD_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_.-]+/-/g; s/^-+//; s/-+$//')"
+[ -n "$CONTAINER_DIR_NAME" ] || CONTAINER_DIR_NAME="workspace"
+CONTAINER_NAME="${TOOL_FLAVOR}-${CONTAINER_DIR_NAME}-$$"
 
 # Build volume mounts; skip optional paths that don't exist on the host
 VOLUMES=(
@@ -178,6 +182,7 @@ fi
 
 # Run the dev container
 docker run --rm -it \
+  --name "${CONTAINER_NAME}" \
   "${VOLUMES[@]}" -w "${PWD_ABS}" \
   -e "ALLOWED_MOUNT_BASE=${PWD_PARENT}" \
   -e "ALLOWED_RW_BASE=${PWD_ABS}" \
