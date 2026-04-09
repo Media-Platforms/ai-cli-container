@@ -112,11 +112,11 @@ is known. Update this only if the memory-bank workflow itself changes.
 
 ### `codex-agents/memory-bank-analyzer.toml`
 
-Codex subagent equivalent of the Claude `agents/memory-bank-analyzer.md`.
-Installed to `~/.local/share/ai-cli-container/codex-agents/` by `make install`
-and mounted into Codex by the host launcher only when the host `~/.codex`
+Codex subagent for memory-bank analysis. Tuned for fast completion
+(`model_reasoning_effort = "low"`, `sandbox_mode = "danger-full-access"`,
+capped output) to work around known Codex subagent stall-detection bugs.
+Mounted into Codex by the host launcher only when the host `~/.codex`
 does not already define `memory-bank-analyzer.toml`.
-Keep in sync with the Claude subagent.
 
 ### `gemini-agents/memory-bank-analyzer.md`
 

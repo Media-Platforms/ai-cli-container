@@ -293,7 +293,7 @@ Extracts project context from `memory_bank/` files before starting implementatio
 
 This ensures implementations follow your project's established patterns and standards.
 
-**Claude** uses this as a subagent loaded via `--plugin-dir`. **Gemini** gets an equivalent subagent installed at container startup to `~/.gemini/agents/` (Markdown). For **Codex**, the launcher generates a temporary `AGENTS.override.md` that merges any existing host global instructions with the injected memory-bank rule for that run. It mounts the bundled `memory-bank-analyzer.toml` from the installed support assets only when the host `~/.codex/agents/` does not already define that agent, so user customizations keep precedence while host `~/.codex` state still persists normally.
+**Claude** uses this as a subagent loaded via `--plugin-dir`. **Gemini** gets an equivalent subagent installed at container startup to `~/.gemini/agents/` (Markdown). For **Codex**, the launcher generates a temporary `AGENTS.override.md` that merges any existing host global instructions with the injected memory-bank rule, and mounts a `memory-bank-analyzer.toml` subagent tuned for fast completion (`model_reasoning_effort = "low"`, `sandbox_mode = "danger-full-access"`, capped output) to work around known Codex subagent stall-detection bugs ([openai/codex#16900](https://github.com/openai/codex/issues/16900)).
 
 ### Included MCP Servers
 

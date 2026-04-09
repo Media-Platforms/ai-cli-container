@@ -40,12 +40,17 @@ render_codex_override() {
     cat <<'EOF'
 # Global Codex Instructions
 
-For any engineering task that involves implementing, changing, debugging, refactoring, testing, or reviewing code:
+For any engineering task that involves implementing, changing, debugging,
+refactoring, testing, or reviewing code:
 
-1. Before doing code analysis or edits, check whether the current working directory contains a `memory_bank/` directory.
-2. If `memory_bank/` exists, immediately use the `memory-bank-analyzer` agent as the first sub-agent step after the task is defined.
-3. Read and summarize the agent's findings, then continue with the task using that context.
-4. If `memory_bank/` does not exist, note that briefly and proceed normally.
+1. Before doing code analysis or edits, check whether the current working
+   directory contains a `memory_bank/` directory.
+2. If `memory_bank/` exists, use the `memory-bank-analyzer` agent to
+   read and summarize those files. Pass it only the user's task
+   description. Use the summary it returns as context, then proceed
+   with the task.
+3. If `memory_bank/` does not exist, note that briefly and proceed
+   normally.
 
 This rule applies across repositories.
 EOF
