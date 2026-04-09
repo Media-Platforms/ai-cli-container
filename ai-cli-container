@@ -186,8 +186,13 @@ else
 fi
 
 # Run the dev container
+# Codex subagents execute tool calls via bubblewrap, which requires
+# unprivileged user namespaces (unshare CLONE_NEWUSER).  The default
+# Docker seccomp profile blocks this syscall, so we disable it.
+# The Docker socket proxy still enforces container-creation policy.
 docker run --rm -it \
   --name "${CONTAINER_NAME}" \
+  --security-opt seccomp=unconfined \
   "${VOLUMES[@]}" -w "${PWD_ABS}" \
   -e "ALLOWED_MOUNT_BASE=${PWD_PARENT}" \
   -e "ALLOWED_RW_BASE=${PWD_ABS}" \

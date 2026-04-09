@@ -118,6 +118,16 @@ The existing `memory-bank-analyzer` prompt explicitly expects a `memory_bank`
 directory in the current repo, which is why adding that directory is useful here
 and in downstream repos using this container.
 
+## Seccomp Policy
+
+The container runs with `--security-opt seccomp=unconfined`.  Codex's Rust
+sandbox uses bubblewrap, which calls `unshare(CLONE_NEWUSER)` to create
+user namespaces.  Docker's default seccomp profile blocks this syscall, so
+Codex subagents silently fail to execute any tool calls without this
+override.  The Docker socket proxy still enforces container-creation
+policy, and the `dev` user has no direct access to the host Docker socket,
+so disabling seccomp does not weaken the primary security boundary.
+
 ## Security and Trust Boundaries
 
 ### Boundary 1: Host to development container

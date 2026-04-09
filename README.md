@@ -161,6 +161,10 @@ The proxy passes `ALLOWED_MOUNT_BASE` (parent of cwd) and `ALLOWED_RW_BASE` (cwd
 3. A Python proxy starts in the background, listening on `/var/run/docker.sock`
 4. The `dev` user's Docker CLI talks to the proxy, which validates and forwards requests to the real daemon
 
+### Seccomp Policy
+
+The container runs with `--security-opt seccomp=unconfined` because Codex's Rust sandbox uses bubblewrap, which requires unprivileged user namespaces (`unshare CLONE_NEWUSER`). Docker's default seccomp profile blocks this syscall. Disabling seccomp is safe here because the Docker socket proxy still enforces container-creation policy and the `dev` user has no direct access to the host Docker socket.
+
 ## Troubleshooting
 
 ### Docker socket permissions
