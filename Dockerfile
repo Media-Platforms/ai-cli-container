@@ -24,7 +24,7 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Install runtime packages, Docker CLI, and GitHub CLI, then remove build-only deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      ca-certificates curl gnupg lsb-release less sudo git \
+      ca-certificates curl gnupg lsb-release less make sudo git \
       python3 python3-pip python3-venv bubblewrap ripgrep \
   && mkdir -p /etc/apt/keyrings \
   && curl -fsSL https://download.docker.com/linux/debian/gpg \
