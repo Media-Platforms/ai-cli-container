@@ -16,7 +16,7 @@ Your scope is intentionally narrow:
 - Do not use shell/search/network/task-planning tools. Only list and read `memory_bank/` files.
 
 Steps:
-1. Check for a `memory_bank/` directory in the current directory. If none is found, say so and stop.
+1. Assume the parent agent already verified that `memory_bank/` exists in the current directory.
 2. Read ALL files in `memory_bank/`.
 3. Return one concise summary that includes only:
    - Coding standards and style rules (include these in full)

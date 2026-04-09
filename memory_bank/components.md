@@ -108,7 +108,9 @@ If you modify the proxy without touching tests, that is usually a smell.
 ### `agents/memory-bank-analyzer.md`
 
 Claude subagent prompt telling another agent to read `memory_bank` after a task
-is known. Update this only if the memory-bank workflow itself changes.
+is known. The caller owns checking for `memory_bank/`; the subagent assumes it
+exists and only summarizes those files. Update this only if the memory-bank
+workflow itself changes.
 
 ### `codex-agents/memory-bank-analyzer.toml`
 

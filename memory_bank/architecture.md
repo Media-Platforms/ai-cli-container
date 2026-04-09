@@ -114,9 +114,10 @@ Owns Claude-specific extras shipped in the image:
 - `pdb_mcp_server.py`, a stdio MCP server for interactive Pdb sessions launched
   with `docker compose run`
 
-The existing `memory-bank-analyzer` prompt explicitly expects a `memory_bank`
-directory in the current repo, which is why adding that directory is useful here
-and in downstream repos using this container.
+The top-level agent workflow checks for `memory_bank/` before invoking the
+`memory-bank-analyzer` subagent. The subagent itself assumes the directory is
+present and only reads those files, which keeps the ownership split clear:
+callers decide whether to invoke it; the analyzer summarizes the contents.
 
 ## Seccomp Policy
 
