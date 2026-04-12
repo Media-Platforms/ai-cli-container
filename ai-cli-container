@@ -59,6 +59,16 @@ EOF
   } > "$dest_file"
 }
 
+stage_codex_agents_dir() {
+  local host_agents_dir="$1"
+
+  TMP_CODEX_AGENTS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/codex-agents.XXXXXX")"
+  if [ -d "$host_agents_dir" ]; then
+    cp -R "${host_agents_dir}/." "${TMP_CODEX_AGENTS_DIR}/"
+  fi
+  cp "$CODEX_AGENT_ASSET" "${TMP_CODEX_AGENTS_DIR}/memory-bank-analyzer.toml"
+}
+
 lookup_macos_keychain_secret() {
   local service="$1"
 
@@ -154,23 +164,21 @@ fi
 [ -d "${HOME}/.config/gh" ] && VOLUMES+=(-v "${HOME}/.config/gh:/home/dev/.config/gh:ro")
 
 if [ "$TOOL_FLAVOR" = "codex" ]; then
+  HOST_CODEX_DIR="${HOME}/.codex"
+  HOST_CODEX_AGENTS_DIR="${HOST_CODEX_DIR}/agents"
+
   TMP_CODEX_OVERRIDE="$(mktemp "${TMPDIR:-/tmp}/codex-agents-override.XXXXXX")"
-  if [ -d "${HOME}/.codex" ]; then
-    VOLUMES+=(-v "${HOME}/.codex:/home/dev/.codex:rw")
-    render_codex_override "${HOME}/.codex" "$TMP_CODEX_OVERRIDE"
+  if [ -d "${HOST_CODEX_DIR}" ]; then
+    VOLUMES+=(-v "${HOST_CODEX_DIR}:/home/dev/.codex:rw")
+    render_codex_override "${HOST_CODEX_DIR}" "$TMP_CODEX_OVERRIDE"
   else
     render_codex_override "" "$TMP_CODEX_OVERRIDE"
   fi
   VOLUMES+=(-v "${TMP_CODEX_OVERRIDE}:/home/dev/.codex/AGENTS.override.md:ro")
-  if [ ! -f "${HOME}/.codex/agents/memory-bank-analyzer.toml" ] && [ -f "$CODEX_AGENT_ASSET" ]; then
-    if [ -d "${HOME}/.codex/agents" ]; then
-      VOLUMES+=(-v "${CODEX_AGENT_ASSET}:/home/dev/.codex/agents/memory-bank-analyzer.toml:ro")
-    else
-      TMP_CODEX_AGENTS_DIR="$(mktemp -d "${TMPDIR:-/tmp}/codex-agents.XXXXXX")"
-      cp "$CODEX_AGENT_ASSET" "${TMP_CODEX_AGENTS_DIR}/memory-bank-analyzer.toml"
-      VOLUMES+=(-v "${TMP_CODEX_AGENTS_DIR}:/home/dev/.codex/agents:rw")
-    fi
-  elif [ ! -f "${HOME}/.codex/agents/memory-bank-analyzer.toml" ]; then
+  if [ ! -f "${HOST_CODEX_AGENTS_DIR}/memory-bank-analyzer.toml" ] && [ -f "$CODEX_AGENT_ASSET" ]; then
+    stage_codex_agents_dir "$HOST_CODEX_AGENTS_DIR"
+    VOLUMES+=(-v "${TMP_CODEX_AGENTS_DIR}:/home/dev/.codex/agents:rw")
+  elif [ ! -f "${HOST_CODEX_AGENTS_DIR}/memory-bank-analyzer.toml" ]; then
     echo "Warning: bundled Codex agent asset not found at ${CODEX_AGENT_ASSET}; memory-bank-analyzer will not be injected" >&2
   fi
 elif [ "$TOOL_FLAVOR" = "gemini" ]; then
