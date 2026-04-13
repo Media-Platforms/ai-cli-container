@@ -153,7 +153,7 @@ more work to happen as root should be scrutinized.
 ## Architectural Constraints
 
 - The launcher assumes Docker is available on the host and that the built image
-  tag is `claude-code-dev:latest`.
+  tag is `ai-cli:latest`.
 - The entrypoint assumes the proxy binary is available at
   `/usr/local/bin/docker-socket-proxy`.
 - The proxy policy assumes the host launcher provides accurate

@@ -3,7 +3,7 @@
 
 set -euo pipefail
 
-IMAGE="claude-code-dev:latest"
+IMAGE="ai-cli:latest"
 SELF="$(basename "$0")"
 TOOL_FLAVOR="claude"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

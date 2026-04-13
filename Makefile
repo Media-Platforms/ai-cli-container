@@ -1,4 +1,4 @@
-IMAGE := claude-code-dev:latest
+IMAGE := ai-cli:latest
 PROXY_TEST_IMAGE := docker-socket-proxy-test:latest
 PLATFORM ?= linux/$(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
 INSTALL_DIR_DISPLAY := ~/.local/bin
