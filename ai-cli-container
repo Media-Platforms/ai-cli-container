@@ -79,6 +79,20 @@ lookup_macos_keychain_secret() {
   security find-generic-password -s "$service" -w 2>/dev/null
 }
 
+discover_compose_host_aliases() {
+  local service
+
+  docker compose config --services 2>/dev/null | while IFS= read -r service; do
+    [ -n "$service" ] || continue
+    case "$service" in
+      *[!A-Za-z0-9_.-]*)
+        continue
+        ;;
+    esac
+    printf '%s.docker\n' "$service"
+  done
+}
+
 trap cleanup EXIT
 
 if [[ "${1:-}" == "--container-help" || "${1:-}" == "-H" ]]; then
@@ -149,6 +163,12 @@ PWD_NAME="$(basename "${PWD_ABS}")"
 CONTAINER_DIR_NAME="$(printf '%s' "$PWD_NAME" | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9_.-]+/-/g; s/^-+//; s/-+$//')"
 [ -n "$CONTAINER_DIR_NAME" ] || CONTAINER_DIR_NAME="workspace"
 CONTAINER_NAME="${TOOL_FLAVOR}-${CONTAINER_DIR_NAME}-$$"
+EXTRA_HOSTS=()
+
+while IFS= read -r alias; do
+  [ -n "$alias" ] || continue
+  EXTRA_HOSTS+=(--add-host "${alias}:host-gateway")
+done < <(discover_compose_host_aliases || true)
 
 # Build volume mounts; skip optional paths that don't exist on the host
 VOLUMES=(
@@ -203,6 +223,7 @@ fi
 docker run --rm -it \
   --name "${CONTAINER_NAME}" \
   --security-opt seccomp=unconfined \
+  "${EXTRA_HOSTS[@]}" \
   "${VOLUMES[@]}" -w "${PWD_ABS}" \
   -e "ALLOWED_MOUNT_BASE=${PWD_PARENT}" \
   -e "ALLOWED_RW_BASE=${PWD_ABS}" \

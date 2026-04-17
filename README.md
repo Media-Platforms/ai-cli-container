@@ -122,6 +122,12 @@ The launcher script automatically mounts:
 | `~/.config/gh` | `/home/dev/.config/gh` | GitHub CLI auth tokens |
 | `/var/run/docker.sock` | `/var/run/docker-real.sock` | Docker daemon (behind proxy) |
 
+When the current directory contains a Docker Compose project, the launcher also
+adds `<service>.docker` host aliases inside the dev container for each Compose
+service name, all pointing at Docker's host gateway. This lets the dev
+container reach ports published by that project's containers through a local
+hostname like `voltron.docker`.
+
 ## Container Details
 
 - **Base Image**: `debian:bookworm-slim`
@@ -175,6 +181,24 @@ If you encounter Docker permission errors, ensure your user is in the `docker` g
 sudo usermod -aG docker $USER
 # Log out and back in for changes to take effect
 ```
+
+### Reaching nested Docker Compose apps from inside the dev container
+
+Containers started with `docker compose` from inside the dev container run on
+the host Docker daemon, so `127.0.0.1` inside the dev container refers to the
+dev container itself, not the published port on the host.
+
+If the current directory is a Compose project, the launcher maps each Compose
+service name to the host gateway as `<service>.docker`. That means a service
+named `voltron` can be reached directly like this:
+
+```bash
+curl http://voltron.docker/health
+```
+
+The aliases come from `docker compose config --services`, so they follow the
+current project's Compose configuration instead of exposing a general-purpose
+host alias.
 
 ### AWS credentials not found
 

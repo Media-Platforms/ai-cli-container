@@ -26,7 +26,11 @@ the host and performs these steps:
    the command being launched is the Codex CLI itself.
 4. Build a set of bind mounts based on the current directory and which optional
    host config paths exist.
-5. Run `docker run --rm -it ...` using the current directory as both the
+5. If the current directory is a Docker Compose project, derive service names
+   from `docker compose config --services` and map each `<service>.docker` name
+   to Docker's `host-gateway` so the dev container can reach host-published
+   ports for that project without exposing a general host alias.
+6. Run `docker run --rm -it ...` using the current directory as both the
    working directory and the primary writable bind mount.
 
 ### 2. Container entrypoint
