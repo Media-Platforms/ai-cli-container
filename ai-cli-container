@@ -111,7 +111,8 @@ mounted.
   <either> --container-help       Show launcher help
 
 Environment variables (passed through when set):
-  AWS_PROFILE              AWS profile to use
+  AI_CLI_AWS_PROFILE       AWS profile for the container (overrides AWS_PROFILE)
+  AWS_PROFILE              AWS profile to use (fallback)
   AWS_REGION               AWS region for API calls
   CLAUDE_CODE_USE_BEDROCK  Set to 1 for AWS Bedrock
   AI_CLI_GITHUB_TOKEN      GitHub personal access token for gh CLI (falls back to macOS Keychain)
@@ -134,6 +135,8 @@ fi
 if [ -z "${AI_CLI_GITHUB_TOKEN:-}" ]; then
   AI_CLI_GITHUB_TOKEN="$(lookup_macos_keychain_secret AI_CLI_GITHUB_TOKEN || true)"
 fi
+
+AI_CLI_AWS_PROFILE="${AI_CLI_AWS_PROFILE:-${AWS_PROFILE:-}}"
 
 # When invoked as an alternate launcher, inject the CLI command only when the
 # user is launching the CLI itself rather than an arbitrary container command.
@@ -227,7 +230,7 @@ docker run --rm -it \
   "${VOLUMES[@]}" -w "${PWD_ABS}" \
   -e "ALLOWED_MOUNT_BASE=${PWD_PARENT}" \
   -e "ALLOWED_RW_BASE=${PWD_ABS}" \
-  ${AWS_PROFILE:+-e "AWS_PROFILE=${AWS_PROFILE}"} \
+  ${AI_CLI_AWS_PROFILE:+-e "AWS_PROFILE=${AI_CLI_AWS_PROFILE}"} \
   ${AWS_REGION:+-e "AWS_REGION=${AWS_REGION}"} \
   ${CLAUDE_CODE_USE_BEDROCK:+-e "CLAUDE_CODE_USE_BEDROCK=${CLAUDE_CODE_USE_BEDROCK}"} \
   ${AI_CLI_GITHUB_TOKEN:+-e "GITHUB_TOKEN=${AI_CLI_GITHUB_TOKEN}"} \
