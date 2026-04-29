@@ -54,16 +54,4 @@ if [ -d "$USER_PLUGINS" ]; then
   CLAUDE_ARGS+=(--plugin-dir "$USER_PLUGINS")
 fi
 
-HAS_MODEL=false
-for arg in "$@"; do
-  if [[ "$arg" == "--model" ]]; then
-    HAS_MODEL=true
-    break
-  fi
-done
-
-if [ "$HAS_MODEL" = false ]; then
-  CLAUDE_ARGS+=(--model us.anthropic.claude-opus-4-6-v1)
-fi
-
 exec "${DEV_ENV[@]}" claude "${CLAUDE_ARGS[@]}" "$@"
