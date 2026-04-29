@@ -178,7 +178,7 @@ VOLUMES=(
   -v "${PWD_ABS}:${PWD_ABS}"
   -v "/var/run/docker.sock:/var/run/docker-real.sock"
 )
-[ -d "${HOME}/.aws" ]      && VOLUMES+=(-v "${HOME}/.aws:/home/dev/.aws:ro")
+[ -d "${HOME}/.aws" ]      && VOLUMES+=(-v "${HOME}/.aws:/home/dev/.aws:rw")
 if [ -f "${HOME}/.gitconfig" ]; then
   VOLUMES+=(-v "${HOME}/.gitconfig:/home/dev/.gitconfig:ro")
 else
