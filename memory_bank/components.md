@@ -57,10 +57,31 @@ Edit this when changing:
 - how different tool flavors are selected
 - preflight checks before `docker run`
 - auth fallback behavior on the host
+- which backend Claude Code talks to
 
 This script is a host-side compatibility surface. Be careful with shell
 portability and quoting. It already uses strict mode and array-based volume
 assembly; preserve that style.
+
+Backend selection lives here, not in `start-ai-cli`. `AI_CLI_BACKEND` picks
+`bedrock`, `gateway`, or `anthropic`, and is inferred from the environment when
+unset. Each case owns the full set of Anthropic environment variables it passes
+through, including clearing the ones that belong to the other backends, so a
+host environment configured for one backend cannot leak into another.
+
+Settings that must override the mounted `~/.claude/settings.json` travel to the
+container in `AI_CLI_CLAUDE_SETTINGS`, which `start-ai-cli` passes to
+`claude --settings`. That is how a host `apiKeyHelper` — normally a macOS
+`security` call that cannot run in the container — gets replaced: with nothing
+for Bedrock, and with `printenv AI_CLI_ANTHROPIC_API_KEY` for the gateway. Keep
+that variable a small, launcher-authored JSON object.
+
+The gateway key travels in `AI_CLI_ANTHROPIC_API_KEY` rather than in
+`ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` on purpose: each of those sends
+the key only one way, as an `x-api-key` header or as a bearer token, and setting
+both makes Claude Code warn that the credentials conflict. An `apiKeyHelper`
+sends both headers, which is what the host setup does and what LiteLLM-style
+proxies expect.
 
 ### `start-ai-cli`
 
@@ -71,6 +92,7 @@ Edit this when changing:
 - Claude default arguments
 - arbitrary-command vs Claude-command dispatch
 - default model behavior
+- how launcher-chosen Claude settings are applied (`AI_CLI_CLAUDE_SETTINGS`)
 
 Do not move host-specific logic here. This script runs inside the container.
 

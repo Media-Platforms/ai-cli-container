@@ -75,13 +75,63 @@ just SSO before starting the container.
 For Codex, the script will export `OPENAI_API_KEY` from your environment, or from your macOS Keychain.
 For GitHub CLI workflows, it will export `AI_CLI_GITHUB_TOKEN` from your environment, or from your macOS Keychain, as `GITHUB_TOKEN` inside the container.
 
+### Choosing a Claude backend
+
+`claude-container` can reach Claude through AWS Bedrock, through an
+Anthropic-compatible gateway such as a LiteLLM proxy, or through the Anthropic
+API with the credentials already in `~/.claude`. Set `AI_CLI_BACKEND` to
+`bedrock`, `gateway`, or `anthropic` to pick one:
+
+```bash
+# AWS Bedrock, using ~/.aws credentials
+AI_CLI_BACKEND=bedrock claude-container
+
+# A LiteLLM (or other Anthropic-compatible) gateway
+AI_CLI_BACKEND=gateway claude-container
+```
+
+When `AI_CLI_BACKEND` is unset the launcher infers the backend: Bedrock if
+`CLAUDE_CODE_USE_BEDROCK` is set, otherwise the gateway if `ANTHROPIC_BASE_URL`
+or `AI_CLI_ANTHROPIC_API_KEY` is set, otherwise the Anthropic API.
+
+The gateway backend needs a key and a base URL:
+
+- The key comes from `AI_CLI_ANTHROPIC_API_KEY`, then `ANTHROPIC_API_KEY`, then
+  your macOS Keychain under the service name `AI_CLI_ANTHROPIC_API_KEY` or
+  `ai-gateway-virtual-key`. The launcher passes it into the container as
+  `AI_CLI_ANTHROPIC_API_KEY` and configures an `apiKeyHelper` there that reads
+  it back, so Claude Code sends the key as an `x-api-key` header and as a bearer
+  token — the same pair an `apiKeyHelper` sends on the host. Setting
+  `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` instead would send only one of
+  those headers, and setting both makes Claude Code warn that the credentials
+  conflict.
+- The base URL comes from `ANTHROPIC_BASE_URL`, or from the `env` block of the
+  mounted `~/.claude/settings.json` if you already configure the gateway there.
+
+To store the key in your Keychain:
+
+```bash
+security add-generic-password -s AI_CLI_ANTHROPIC_API_KEY -a "$USER" -w '<key>'
+```
+
+An `apiKeyHelper` in your `~/.claude/settings.json` is usually a macOS
+`security` call, which cannot run in the Linux container, so the launcher
+replaces it there with `claude --settings`: with `printenv
+AI_CLI_ANTHROPIC_API_KEY` for the gateway backend, and with nothing at all for
+Bedrock, which authenticates with your AWS credentials instead.
+
 ### Environment Variables
 
 The launcher script passes through these environment variables from your host if set:
 
+- **`AI_CLI_BACKEND`** - Which backend Claude Code uses: `bedrock`, `gateway`, or `anthropic`
+- **`AI_CLI_ANTHROPIC_API_KEY`** - API key for the gateway backend (falls back to macOS Keychain if not set)
+- **`ANTHROPIC_BASE_URL`** - Base URL for the gateway backend
 - **`AWS_PROFILE`** - AWS profile to use (from `~/.aws/config`)
 - **`AWS_REGION`** - AWS region for API calls
 - **`CLAUDE_CODE_USE_BEDROCK`** - Set to `1` to use AWS Bedrock instead of Anthropic API
+- **`CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY`** - Set to `1` to list the gateway's models (defaults to `1` for the gateway backend)
+- **`CLAUDE_CODE_ATTRIBUTION_HEADER`** - Set to `0` to drop Claude Code's attribution header (defaults to `0` for the gateway backend)
 - **`AI_CLI_GITHUB_TOKEN`** - GitHub personal access token for `gh` CLI (passed as `GITHUB_TOKEN` inside the container, falls back to macOS Keychain if not set)
 - **`GOOGLE_CLOUD_PROJECT`** - Google Cloud project ID for Gemini CLI Vertex usage
 - **`GOOGLE_CLOUD_LOCATION`** - Google Cloud region for Gemini CLI Vertex usage
@@ -273,6 +323,18 @@ Run Claude Code once on your host to set up authentication, or manually place yo
   "apiKey": "your-api-key-here"
 }
 ```
+
+### Claude Code not reaching the gateway
+
+If `AI_CLI_BACKEND=gateway` requests go to `api.anthropic.com` instead of your
+gateway, the launcher found no base URL: set `ANTHROPIC_BASE_URL` on the host or
+add it to the `env` block of `~/.claude/settings.json`. The launcher warns when
+it can find neither.
+
+If the gateway rejects requests as unauthenticated, check which key the launcher
+picked up: `AI_CLI_ANTHROPIC_API_KEY` and `ANTHROPIC_API_KEY` both win over the
+Keychain entries, so a stale value exported in your shell will shadow a freshly
+rotated key.
 
 ## Container Plugin
 
