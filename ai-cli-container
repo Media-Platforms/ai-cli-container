@@ -98,6 +98,9 @@ mounted.
   <either> --container-help       Show launcher help
 
 Environment variables (passed through when set):
+  AI_CLI_BACKEND           Claude backend: bedrock, gateway, or anthropic
+  AI_CLI_ANTHROPIC_API_KEY Gateway API key (falls back to macOS Keychain)
+  ANTHROPIC_BASE_URL       Gateway base URL
   AI_CLI_AWS_PROFILE       AWS profile for the container (overrides AWS_PROFILE)
   AWS_PROFILE              AWS profile to use (fallback)
   AWS_REGION               AWS region for API calls
@@ -144,6 +147,74 @@ elif [[ "$SELF" == "gemini-container" ]]; then
   if [ $# -eq 0 ] || [[ "${1:0:1}" == "-" ]]; then
     set -- gemini --yolo "$@"
   fi
+fi
+
+# Pick the backend Claude Code talks to: AWS Bedrock, an Anthropic-compatible
+# gateway such as a LiteLLM proxy, or the Anthropic API with whatever
+# credentials ~/.claude already holds.  AI_CLI_BACKEND selects one explicitly;
+# when it is unset the backend is inferred so existing setups keep working.
+CLAUDE_SETTINGS_OVERRIDE=""
+ANTHROPIC_AUTH_TOKEN=""
+
+if [ "$TOOL_FLAVOR" = "claude" ]; then
+  if [ -z "${AI_CLI_BACKEND:-}" ]; then
+    if [ -n "${CLAUDE_CODE_USE_BEDROCK:-}" ]; then
+      AI_CLI_BACKEND="bedrock"
+    elif [ -n "${ANTHROPIC_BASE_URL:-}" ] || [ -n "${AI_CLI_ANTHROPIC_API_KEY:-}" ]; then
+      AI_CLI_BACKEND="gateway"
+    else
+      AI_CLI_BACKEND="anthropic"
+    fi
+  fi
+
+  case "$AI_CLI_BACKEND" in
+    bedrock)
+      CLAUDE_CODE_USE_BEDROCK="${CLAUDE_CODE_USE_BEDROCK:-1}"
+      ANTHROPIC_BASE_URL=""
+      ANTHROPIC_API_KEY=""
+      CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=""
+      # An apiKeyHelper in the mounted ~/.claude/settings.json is typically a
+      # macOS "security" call that cannot run in the container.  Bedrock uses
+      # the AWS credentials instead, so disable the helper.
+      CLAUDE_SETTINGS_OVERRIDE='{"apiKeyHelper": ""}'
+      ;;
+    gateway)
+      CLAUDE_CODE_USE_BEDROCK=""
+      AI_CLI_ANTHROPIC_API_KEY="${AI_CLI_ANTHROPIC_API_KEY:-${ANTHROPIC_API_KEY:-}}"
+      if [ -z "$AI_CLI_ANTHROPIC_API_KEY" ]; then
+        AI_CLI_ANTHROPIC_API_KEY="$(lookup_macos_keychain_secret AI_CLI_ANTHROPIC_API_KEY \
+          || lookup_macos_keychain_secret ai-gateway-virtual-key)" || {
+          echo "Error: AI_CLI_ANTHROPIC_API_KEY not found in environment or macOS Keychain" >&2
+          echo "  Store it with: security add-generic-password -s AI_CLI_ANTHROPIC_API_KEY -a \"\$USER\" -w '<key>'" >&2
+          exit 1
+        }
+      fi
+      if [ -z "${ANTHROPIC_BASE_URL:-}" ] \
+        && ! grep -q ANTHROPIC_BASE_URL "${HOME}/.claude/settings.json" 2>/dev/null; then
+        echo "Warning: ANTHROPIC_BASE_URL is not set and ~/.claude/settings.json does not set it;" >&2
+        echo "  Claude Code will talk to the Anthropic API instead of the gateway" >&2
+      fi
+      # Claude Code sends ANTHROPIC_API_KEY as an "x-api-key" header and
+      # ANTHROPIC_AUTH_TOKEN as a bearer token; an apiKeyHelper on the host
+      # sends the key both ways, so send it both ways here too.
+      ANTHROPIC_API_KEY="$AI_CLI_ANTHROPIC_API_KEY"
+      ANTHROPIC_AUTH_TOKEN="$AI_CLI_ANTHROPIC_API_KEY"
+      CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY="${CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY:-1}"
+      CLAUDE_CODE_ATTRIBUTION_HEADER="${CLAUDE_CODE_ATTRIBUTION_HEADER:-0}"
+      # The container gets the key from the environment, so disable a host
+      # apiKeyHelper that would fail here (see the bedrock case above).
+      CLAUDE_SETTINGS_OVERRIDE='{"apiKeyHelper": ""}'
+      ;;
+    anthropic)
+      CLAUDE_CODE_USE_BEDROCK=""
+      CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=""
+      ;;
+    *)
+      echo "Error: unknown AI_CLI_BACKEND '$AI_CLI_BACKEND'" >&2
+      echo "  Expected one of: bedrock, gateway, anthropic" >&2
+      exit 1
+      ;;
+  esac
 fi
 
 # Get absolute path of current directory
@@ -217,9 +288,15 @@ docker run --rm -it \
   "${VOLUMES[@]}" -w "${PWD_ABS}" \
   -e "ALLOWED_MOUNT_BASE=${PWD_PARENT}" \
   -e "ALLOWED_RW_BASE=${PWD_ABS}" \
+  ${ANTHROPIC_BASE_URL:+-e "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}"} \
+  ${ANTHROPIC_API_KEY:+-e "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}"} \
+  ${ANTHROPIC_AUTH_TOKEN:+-e "ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN}"} \
   ${AI_CLI_AWS_PROFILE:+-e "AWS_PROFILE=${AI_CLI_AWS_PROFILE}"} \
   ${AWS_REGION:+-e "AWS_REGION=${AWS_REGION}"} \
   ${CLAUDE_CODE_USE_BEDROCK:+-e "CLAUDE_CODE_USE_BEDROCK=${CLAUDE_CODE_USE_BEDROCK}"} \
+  ${CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY:+-e "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=${CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY}"} \
+  ${CLAUDE_CODE_ATTRIBUTION_HEADER:+-e "CLAUDE_CODE_ATTRIBUTION_HEADER=${CLAUDE_CODE_ATTRIBUTION_HEADER}"} \
+  ${CLAUDE_SETTINGS_OVERRIDE:+-e "AI_CLI_CLAUDE_SETTINGS=${CLAUDE_SETTINGS_OVERRIDE}"} \
   ${AI_CLI_GITHUB_TOKEN:+-e "GITHUB_TOKEN=${AI_CLI_GITHUB_TOKEN}"} \
   ${GOOGLE_CLOUD_PROJECT:+-e "GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}"} \
   ${GOOGLE_CLOUD_LOCATION:+-e "GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION}"} \

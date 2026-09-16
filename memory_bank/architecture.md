@@ -24,13 +24,16 @@ the host and performs these steps:
    available so `gh` can authenticate inside the container.
 4. For Codex, source `OPENAI_API_KEY` from the environment or macOS Keychain if
    the command being launched is the Codex CLI itself.
-4. Build a set of bind mounts based on the current directory and which optional
+5. For Claude, select a backend (`AI_CLI_BACKEND`: `bedrock`, `gateway`, or
+   `anthropic`, inferred from the environment when unset) and resolve the
+   gateway key from the environment or macOS Keychain.
+6. Build a set of bind mounts based on the current directory and which optional
    host config paths exist.
-5. If the current directory is a Docker Compose project, derive service names
+7. If the current directory is a Docker Compose project, derive service names
    from `docker compose config --services` and map each `<service>.docker` name
    to Docker's `host-gateway` so the dev container can reach host-published
    ports for that project without exposing a general host alias.
-6. Run `docker run --rm -it ...` using the current directory as both the
+8. Run `docker run --rm -it ...` using the current directory as both the
    working directory and the primary writable bind mount.
 
 ### 2. Container entrypoint
@@ -45,8 +48,9 @@ The image entrypoint is `start-ai-cli`. It starts as root and:
 5. If the first CLI arg is a non-flag token, treats the command as an arbitrary
    process to exec as the `dev` user.
 6. Otherwise, launches `claude` as `dev` with `--plugin-dir
-   /home/dev/container-plugin` and `--dangerously-skip-permissions`, plus a
-   default model if no explicit `--model` was supplied.
+   /home/dev/container-plugin` and `--dangerously-skip-permissions`, plus
+   `--settings "$AI_CLI_CLAUDE_SETTINGS"` when the launcher chose settings that
+   must override the mounted `~/.claude/settings.json`.
 
 The distinction in step 5 is important. The entrypoint only wraps Claude when
 the command begins with flags or is empty. Commands like `bash`, `aws`, or

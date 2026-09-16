@@ -55,6 +55,13 @@ if [ -f "$MEMORY_BANK_INSTRUCTION" ]; then
   CLAUDE_ARGS+=(--append-system-prompt "$(cat "$MEMORY_BANK_INSTRUCTION")")
 fi
 
+# Apply the settings the launcher chose for the selected backend.  These take
+# precedence over the mounted ~/.claude/settings.json, which may configure host
+# tools that don't exist in the container.
+if [ -n "${AI_CLI_CLAUDE_SETTINGS:-}" ]; then
+  CLAUDE_ARGS+=(--settings "$AI_CLI_CLAUDE_SETTINGS")
+fi
+
 # Load user-supplied plugins if the directory was mounted
 USER_PLUGINS=/home/dev/user-plugins
 if [ -d "$USER_PLUGINS" ]; then
