@@ -98,10 +98,13 @@ The gateway backend needs a key and a base URL:
 
 - The key comes from `AI_CLI_ANTHROPIC_API_KEY`, then `ANTHROPIC_API_KEY`, then
   your macOS Keychain under the service name `AI_CLI_ANTHROPIC_API_KEY` or
-  `ai-gateway-virtual-key`. The launcher passes it into the container as both
-  `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN`, so Claude Code sends it as an
-  `x-api-key` header and as a bearer token, the same pair an `apiKeyHelper`
-  sends on the host.
+  `ai-gateway-virtual-key`. The launcher passes it into the container as
+  `AI_CLI_ANTHROPIC_API_KEY` and configures an `apiKeyHelper` there that reads
+  it back, so Claude Code sends the key as an `x-api-key` header and as a bearer
+  token — the same pair an `apiKeyHelper` sends on the host. Setting
+  `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` instead would send only one of
+  those headers, and setting both makes Claude Code warn that the credentials
+  conflict.
 - The base URL comes from `ANTHROPIC_BASE_URL`, or from the `env` block of the
   mounted `~/.claude/settings.json` if you already configure the gateway there.
 
@@ -113,8 +116,9 @@ security add-generic-password -s AI_CLI_ANTHROPIC_API_KEY -a "$USER" -w '<key>'
 
 An `apiKeyHelper` in your `~/.claude/settings.json` is usually a macOS
 `security` call, which cannot run in the Linux container, so the launcher
-disables it there (with `claude --settings`) for the Bedrock and gateway
-backends and supplies the key through the environment instead.
+replaces it there with `claude --settings`: with `printenv
+AI_CLI_ANTHROPIC_API_KEY` for the gateway backend, and with nothing at all for
+Bedrock, which authenticates with your AWS credentials instead.
 
 ### Environment Variables
 

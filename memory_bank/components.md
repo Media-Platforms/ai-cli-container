@@ -72,9 +72,16 @@ host environment configured for one backend cannot leak into another.
 Settings that must override the mounted `~/.claude/settings.json` travel to the
 container in `AI_CLI_CLAUDE_SETTINGS`, which `start-ai-cli` passes to
 `claude --settings`. That is how a host `apiKeyHelper` — normally a macOS
-`security` call that cannot run in the container — gets disabled. Keep that
-variable a small, launcher-authored JSON object; per-backend credentials belong
-in ordinary environment variables.
+`security` call that cannot run in the container — gets replaced: with nothing
+for Bedrock, and with `printenv AI_CLI_ANTHROPIC_API_KEY` for the gateway. Keep
+that variable a small, launcher-authored JSON object.
+
+The gateway key travels in `AI_CLI_ANTHROPIC_API_KEY` rather than in
+`ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` on purpose: each of those sends
+the key only one way, as an `x-api-key` header or as a bearer token, and setting
+both makes Claude Code warn that the credentials conflict. An `apiKeyHelper`
+sends both headers, which is what the host setup does and what LiteLLM-style
+proxies expect.
 
 ### `start-ai-cli`
 

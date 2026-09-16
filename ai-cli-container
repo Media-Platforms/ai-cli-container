@@ -154,7 +154,7 @@ fi
 # credentials ~/.claude already holds.  AI_CLI_BACKEND selects one explicitly;
 # when it is unset the backend is inferred so existing setups keep working.
 CLAUDE_SETTINGS_OVERRIDE=""
-ANTHROPIC_AUTH_TOKEN=""
+ANTHROPIC_AUTH_TOKEN="${ANTHROPIC_AUTH_TOKEN:-}"
 
 if [ "$TOOL_FLAVOR" = "claude" ]; then
   if [ -z "${AI_CLI_BACKEND:-}" ]; then
@@ -172,6 +172,8 @@ if [ "$TOOL_FLAVOR" = "claude" ]; then
       CLAUDE_CODE_USE_BEDROCK="${CLAUDE_CODE_USE_BEDROCK:-1}"
       ANTHROPIC_BASE_URL=""
       ANTHROPIC_API_KEY=""
+      ANTHROPIC_AUTH_TOKEN=""
+      AI_CLI_ANTHROPIC_API_KEY=""
       CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=""
       # An apiKeyHelper in the mounted ~/.claude/settings.json is typically a
       # macOS "security" call that cannot run in the container.  Bedrock uses
@@ -194,19 +196,20 @@ if [ "$TOOL_FLAVOR" = "claude" ]; then
         echo "Warning: ANTHROPIC_BASE_URL is not set and ~/.claude/settings.json does not set it;" >&2
         echo "  Claude Code will talk to the Anthropic API instead of the gateway" >&2
       fi
-      # Claude Code sends ANTHROPIC_API_KEY as an "x-api-key" header and
-      # ANTHROPIC_AUTH_TOKEN as a bearer token; an apiKeyHelper on the host
-      # sends the key both ways, so send it both ways here too.
-      ANTHROPIC_API_KEY="$AI_CLI_ANTHROPIC_API_KEY"
-      ANTHROPIC_AUTH_TOKEN="$AI_CLI_ANTHROPIC_API_KEY"
+      # Claude Code warns when both ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKEN
+      # are set, and each on its own sends the key only one way -- as an
+      # "x-api-key" header or as a bearer token.  So hand the key to the
+      # container in AI_CLI_ANTHROPIC_API_KEY and read it back with an
+      # apiKeyHelper, which sends it both ways just as it does on the host.
+      ANTHROPIC_API_KEY=""
+      ANTHROPIC_AUTH_TOKEN=""
       CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY="${CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY:-1}"
       CLAUDE_CODE_ATTRIBUTION_HEADER="${CLAUDE_CODE_ATTRIBUTION_HEADER:-0}"
-      # The container gets the key from the environment, so disable a host
-      # apiKeyHelper that would fail here (see the bedrock case above).
-      CLAUDE_SETTINGS_OVERRIDE='{"apiKeyHelper": ""}'
+      CLAUDE_SETTINGS_OVERRIDE='{"apiKeyHelper": "printenv AI_CLI_ANTHROPIC_API_KEY"}'
       ;;
     anthropic)
       CLAUDE_CODE_USE_BEDROCK=""
+      AI_CLI_ANTHROPIC_API_KEY=""
       CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=""
       ;;
     *)
@@ -215,6 +218,9 @@ if [ "$TOOL_FLAVOR" = "claude" ]; then
       exit 1
       ;;
   esac
+else
+  # A gateway key is only meaningful to Claude Code.
+  AI_CLI_ANTHROPIC_API_KEY=""
 fi
 
 # Get absolute path of current directory
@@ -291,6 +297,7 @@ docker run --rm -it \
   ${ANTHROPIC_BASE_URL:+-e "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}"} \
   ${ANTHROPIC_API_KEY:+-e "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}"} \
   ${ANTHROPIC_AUTH_TOKEN:+-e "ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN}"} \
+  ${AI_CLI_ANTHROPIC_API_KEY:+-e "AI_CLI_ANTHROPIC_API_KEY=${AI_CLI_ANTHROPIC_API_KEY}"} \
   ${AI_CLI_AWS_PROFILE:+-e "AWS_PROFILE=${AI_CLI_AWS_PROFILE}"} \
   ${AWS_REGION:+-e "AWS_REGION=${AWS_REGION}"} \
   ${CLAUDE_CODE_USE_BEDROCK:+-e "CLAUDE_CODE_USE_BEDROCK=${CLAUDE_CODE_USE_BEDROCK}"} \
