@@ -33,7 +33,13 @@ the host and performs these steps:
    from `docker compose config --services` and map each `<service>.docker` name
    to Docker's `host-gateway` so the dev container can reach host-published
    ports for that project without exposing a general host alias.
-8. Run `docker run --rm -it ...` using the current directory as both the
+8. Export the secret variables and pass them to `docker run` as `-e NAME` with
+   no value, so the values are copied from the launcher's environment instead of
+   appearing as command-line arguments in the host process list. Only exported
+   variables can be passed this way, which is why the Keychain lookups above are
+   followed by an `export`. Non-secret variables are still passed as
+   `-e NAME=value`.
+9. Run `docker run --rm -it ...` using the current directory as both the
    working directory and the primary writable bind mount.
 
 ### 2. Container entrypoint
@@ -101,18 +107,46 @@ Owns in-container concerns:
 
 ### `docker-socket-proxy/docker_socket_proxy.py`
 
-Owns Docker API filtering. It behaves as a Unix-socket HTTP proxy and only
-inspects one risk-sensitive class of requests deeply: container creation. It
-currently rejects:
+Owns Docker API filtering. It behaves as a Unix-socket HTTP proxy that answers
+only requests it recognizes: anything not matched by its endpoint list is
+rejected with 403, so adding a capability to the container means adding a rule,
+never removing one. It rejects:
 
-- privileged containers
-- blocked Linux capabilities
-- host PID namespace
-- host network mode
+- endpoints outside the allowlist, including plugins, swarm services, configs,
+  secrets, and the BuildKit `/session` and `/grpc` endpoints
+- privileged containers and privileged `exec`
+- capabilities outside Docker's default set (an allowlist, normalized by
+  upper-casing and stripping a `CAP_` prefix, applied to both `CapAdd` and
+  `Capabilities`)
+- host and `container:` values for the PID, network, IPC, UTS, user and cgroup
+  namespace modes
+- `VolumesFrom`, `Devices`, `DeviceRequests`, `Runtime`, and an empty
+  `MaskedPaths` or `ReadonlyPaths`
+- `SecurityOpt` other than `no-new-privileges`, `seccomp` and `label` (not
+  `label=disable`)
+- log drivers other than `json-file`, `local`, `journald` and `none`
+- volume drivers other than `local`, and local driver options that describe a
+  bind (`type`/`o=bind`/`device`), both on `POST /volumes/create` and inside a
+  `Type=volume` mount's `VolumeOptions.DriverConfig.Options`
+- `POST /build` with BuildKit, `securityopt`, or a host network mode
+- any `HostConfig` field it does not classify, unless the value is empty
 - bind mounts outside `ALLOWED_MOUNT_BASE`
 - writable bind mounts outside `ALLOWED_RW_BASE`
+- requests framed with both `Content-Length` and `Transfer-Encoding`, or with
+  either header repeated
 
 It supports both `Binds` and `Mounts` forms inside Docker create payloads.
+
+It parses requests the way the daemon does, and that correspondence is the
+reason the checks hold: paths are percent-decoded, the API version prefix is
+stripped so `/containers/create` and `/v1.52/containers/create` take the same
+path through the code, JSON field names are matched case-insensitively because
+Go's decoder does, and a body that spells one field twice is rejected instead of
+guessed at.
+
+Residual gaps are listed in the README's "What the Proxy Does Not Protect
+Against" section; the main ones are unresolved symlinks in mount paths and
+access to containers that already exist on the host.
 
 ### `container-plugin/`
 
@@ -157,6 +191,14 @@ threat-model justification and tests.
 The entrypoint starts as root only long enough to secure the real socket and
 start the proxy. Normal tool execution happens as `dev`. Any change that causes
 more work to happen as root should be scrutinized.
+
+`dev` has no sudo rights and is not in the sudo group, and restoring them would
+undo the whole proxy: with sudo, anything in the container can read
+`/var/run/docker-real.sock` directly and ask the host daemon for a privileged
+container. `sudo` stays installed only because root uses it to drop privileges
+to `dev`, both in the image build and in the entrypoint. The cost is that
+`apt install` and `npm install -g` no longer work at runtime, so packages belong
+in the `Dockerfile`.
 
 ## Architectural Constraints
 

@@ -137,6 +137,8 @@ The launcher script passes through these environment variables from your host if
 - **`GOOGLE_CLOUD_LOCATION`** - Google Cloud region for Gemini CLI Vertex usage
 - **`OPENAI_API_KEY`** - OpenAI API key for Codex CLI (falls back to macOS Keychain if not set)
 
+API keys and tokens are handed to `docker run` by name rather than by value, so their values do not show up in the host process list where any local user could read them with `ps`. They are still visible in `docker inspect` of the dev container, because Docker stores a container's environment in its spec.
+
 Example:
 
 ```bash
@@ -182,20 +184,36 @@ hostname like `voltron.docker`.
 
 - **Base Image**: `debian:bookworm-slim`
 - **Container Name**: `<tool>-<current-directory>-<launcher-pid>` (directory name is sanitized for Docker)
-- **User**: `dev` (non-root with sudo access)
+- **User**: `dev` (non-root, with no sudo rights — see [Docker Socket Proxy](#docker-socket-proxy))
 - **Working Directory**: Mirrors your host's current directory
 - **Default Command**: `claude --dangerously-skip-permissions --model us.anthropic.claude-opus-4-6-v1`
 
 ## Docker Socket Proxy
 
-The container includes a security proxy that sits between Claude and the Docker daemon. Instead of giving Claude unrestricted Docker access, the proxy intercepts Docker API requests and enforces the following restrictions:
+The container includes a security proxy that sits between the CLI's Docker client and the host Docker daemon. Sharing the host daemon otherwise means root on the host, because a container can be asked to mount `/` or to run privileged. The proxy answers only requests it recognizes and refuses everything else, so an API field it has never heard of is rejected rather than forwarded.
+
+### What's Allowed
+
+- Read requests (`GET` and `HEAD`) to every resource except plugins, swarm, services, tasks, nodes, configs and secrets
+- Writes to a fixed list of endpoints covering containers, images, builds, networks and volumes — enough for `docker run`, `build`, `exec`, `cp`, `logs`, `compose up`, and pruning
+- On `POST /containers/create`, every `HostConfig` field is either known to be harmless, checked individually, or required to be empty
 
 ### What's Blocked
 
-- **Privileged containers** (`--privileged`)
-- **Dangerous capabilities** (`SYS_ADMIN`, `SYS_PTRACE`, `NET_ADMIN`, `SYS_RAWIO`, `SYS_MODULE`, `DAC_READ_SEARCH`, `ALL`)
-- **Host PID namespace** (`--pid=host`)
-- **Host network mode** (`--network=host`)
+- **Privileged containers** (`--privileged`) and **privileged exec** (`docker exec --privileged`)
+- **Added capabilities** outside Docker's default set. This is an allowlist, so `SYS_ADMIN`, `SYS_PTRACE`, `BPF`, `ALL` and any capability added in a future Docker release are all rejected. Dropping capabilities is always allowed
+- **Host namespaces** — `--pid=host`, `--network=host`, `--ipc=host`, `--uts=host`, `--userns=host`, `--cgroupns=host`
+- **Joining another container's namespaces** — `--pid=container:x` and the equivalent for ipc, network and uts. A process in a shared PID namespace can read another container's mounts through `/proc/<pid>/root`
+- **Weakened confinement** — `--security-opt apparmor=unconfined`, `--security-opt systempaths=unconfined`, `--security-opt label=disable`, and an empty `MaskedPaths` or `ReadonlyPaths`
+- **Host devices** (`--device`), **GPU requests** (`--gpus`) and **alternative runtimes** (`--runtime`)
+- **`--volumes-from`**, which inherits whatever mounts the named container has
+- **Volume driver options that describe a bind** — `docker volume create --driver local -o type=none -o o=bind -o device=/` mounts any host path without naming it in a bind mount, as does the same thing spelled as a `Type=volume` mount's `VolumeOptions.DriverConfig.Options`. Third-party volume drivers are rejected for the same reason: the proxy cannot tell what they will mount. tmpfs volumes are allowed
+- **Log drivers** other than `json-file`, `local`, `journald` and `none`, because a driver like `syslog` can be pointed at a host socket
+- **Plugins, swarm services, configs, secrets and nodes**, whose endpoints install host-level code or run containers the proxy never sees
+- **BuildKit builds**, which tunnel an arbitrary protocol over `/session` and `/grpc`. The classic builder is allowed, and is what this image's Docker CLI uses because it has no buildx plugin
+- **`docker build --network=host` and `--security-opt`**, which are build-time versions of the container flags above
+
+Requests are also rejected before reaching the daemon when they are framed ambiguously — both `Content-Length` and `Transfer-Encoding` set, or either header repeated — because hiding a second request inside the body of the first needs the proxy and the daemon to disagree about where the body ends.
 
 ### Mount Restrictions
 
@@ -217,11 +235,49 @@ The proxy passes `ALLOWED_MOUNT_BASE` (parent of cwd) and `ALLOWED_RW_BASE` (cwd
 3. A Python proxy starts in the background, listening on `/var/run/docker.sock`
 4. The `dev` user's Docker CLI talks to the proxy, which validates and forwards requests to the real daemon
 
+The `dev` user has no sudo rights and is not in the sudo group, which is what keeps step 2 meaningful: with sudo, any process in the container could talk to `/var/run/docker-real.sock` directly and the proxy would be beside the point.
+
+The proxy parses requests the way the daemon does, so that a request cannot mean one thing to each of them. It percent-decodes the path, strips the API version prefix so that `/containers/create` and `/v1.52/containers/create` are checked identically, matches JSON field names without regard to case because Go's JSON decoder does, and rejects a body that spells the same field twice rather than having to guess which spelling the daemon will use.
+
+### What the Proxy Does Not Protect Against
+
+- **Symlinks in mount paths.** A bind mount source is checked as written. A symlink under your working directory that points somewhere else is allowed, and the daemon resolves it on the host
+- **Reading sibling directories.** `ALLOWED_MOUNT_BASE` is the parent of your working directory, so anything beside your project can be mounted read-only
+- **Containers that already exist on the host.** The container can list them and can `exec`, `attach`, or write files into them with `docker cp`. Whatever those containers can reach, it can reach
+- **The workspace mount itself.** Your working directory is mounted at the same path inside the container, so a nested container can be given the same write access the agent already has
+- **Outbound network traffic**, which is not restricted at all
+- **Secrets in the container's own spec.** The launcher passes API keys by name rather than by value, which keeps them out of the host process list, but `docker inspect` of the dev container still shows them
+- **The host kernel.** This is an allowlist over one HTTP API, not a sandbox. If you need a real boundary, do not share the host daemon: run Docker rootless, or use Sysbox or a VM
+
+Refusing the unrecognized cuts both ways. A Docker release that adds a new `HostConfig` field capable of an escape is already handled, because a field the proxy does not classify has to be empty. But a Docker release that adds a new *endpoint* is refused too, so a newly shipped client feature can fail with a 403 that has nothing to do with security. The proxy logs the reason it refused; the fix is to add the endpoint to `WRITE_RULES` in `docker-socket-proxy/docker_socket_proxy.py`, not to loosen the matching.
+
 ### Seccomp Policy
 
-The container runs with `--security-opt seccomp=unconfined` because Codex's Rust sandbox uses bubblewrap, which requires unprivileged user namespaces (`unshare CLONE_NEWUSER`). Docker's default seccomp profile blocks this syscall. Disabling seccomp is safe here because the Docker socket proxy still enforces container-creation policy and the `dev` user has no direct access to the host Docker socket.
+The container runs with `--security-opt seccomp=unconfined` because Codex's Rust sandbox uses bubblewrap, which requires unprivileged user namespaces (`unshare CLONE_NEWUSER`). Docker's default seccomp profile blocks this syscall. The Docker socket proxy still enforces container-creation policy, and the `dev` user has no way to reach the host Docker socket directly. The proxy also allows `--security-opt seccomp=...` on nested containers, since the dev container already runs with seccomp disabled and a child of it gains nothing new.
 
 ## Troubleshooting
+
+### Installing packages inside the container
+
+The `dev` user has no sudo rights, so `apt install` fails, and so does
+`npm install -g` because the global module directory belongs to root. Add what
+you need to the `Dockerfile` and run `make update`.
+
+For a one-off package during a session, install it under `/home/dev`, which
+`dev` owns:
+
+```bash
+pip install --user <package>          # already on PATH via ~/.local/bin
+npm install --prefix ~/.local <package>
+```
+
+### A nested docker command fails with 403
+
+The proxy refuses Docker API endpoints it does not recognize, so a command it has
+never been asked for can fail even when it is harmless. The proxy logs the
+reason on the dev container's stderr, for example
+`rejected: endpoint not allowed: POST /containers/foo/bar`. See
+[Docker Socket Proxy](#docker-socket-proxy).
 
 ### Docker socket permissions
 
