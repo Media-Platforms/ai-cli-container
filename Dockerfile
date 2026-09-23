@@ -42,10 +42,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get purge -y --auto-remove gnupg lsb-release \
   && rm -rf /var/lib/apt/lists/*
 
-# Non-root user
+# Non-root user.  "dev" is deliberately given no sudo rights
+# and is not in the sudo group: with them, a process in the
+# container could run "docker -H unix:///var/run/docker-real.sock"
+# as root and bypass the socket proxy entirely.  sudo is still
+# installed because root uses it to drop privileges to dev,
+# both in the build steps below and in start-ai-cli.
 RUN useradd -ms /bin/bash dev && \
-  usermod -aG sudo dev && \
-  echo "dev ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
   mkdir -p /home/dev/.codex /home/dev/.config/gcloud /home/dev/.gemini /home/dev/.local/bin && \
   chown -R dev:dev /home/dev/.codex /home/dev/.config /home/dev/.gemini /home/dev/.local
 

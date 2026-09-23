@@ -50,6 +50,41 @@ Minimum expectation:
 Ideal expectation:
 
 - also reason through security impact and ensure new negative cases are tested
+- drive a real Docker CLI through a copy of the proxy. From inside the dev
+  container, run a second instance against the real socket and point the CLI at
+  it:
+
+  ```bash
+  sudo env ALLOWED_MOUNT_BASE=/parent/of/cwd ALLOWED_RW_BASE="$PWD" \
+    DOCKER_PROXY_UPSTREAM=/var/run/docker-real.sock \
+    DOCKER_PROXY_LISTEN=/tmp/p.sock \
+    python3 docker-socket-proxy/docker_socket_proxy.py &
+  sudo chmod 666 /tmp/p.sock
+  DOCKER_HOST=unix:///tmp/p.sock docker run --rm alpine true
+  ```
+
+  This is worth the setup cost: the unit tests check policy decisions against
+  payloads written by hand, and only a real client proves the payloads still look
+  like what Docker actually sends. Run both directions — ordinary workflows
+  (`run`, `build`, `exec`, `cp`, `compose up`, `volume create`) must still
+  succeed, and each blocked flag must be refused with a logged reason rather than
+  hanging or failing for some unrelated reason.
+
+  `sudo` in that recipe needs a sudoers entry the shipped image deliberately does
+  not have. Without one, chain the new proxy in front of the running one instead,
+  which needs no privileges because `/var/run/docker.sock` is world-writable:
+
+  ```bash
+  ALLOWED_MOUNT_BASE=/parent/of/cwd ALLOWED_RW_BASE="$PWD" \
+    DOCKER_PROXY_UPSTREAM=/var/run/docker.sock \
+    DOCKER_PROXY_LISTEN=/tmp/p.sock \
+    python3 docker-socket-proxy/docker_socket_proxy.py &
+  ```
+
+  Read the rejection reasons from the new proxy's own log when you do, because a
+  refusal could have come from either instance, and remember that the outer one
+  is whatever shipped in the image: its policy and its bugs both show through, so
+  a workflow failing in a chain is not yet evidence that your copy broke it.
 
 ### If you change `container-plugin/pdb_mcp_server.py`
 

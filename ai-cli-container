@@ -282,6 +282,16 @@ else
   fi
 fi
 
+# Hand secrets to "docker run" by name rather than by value.
+# "-e NAME" copies the value from this process's environment,
+# so it never appears as a "docker run" argument in the host
+# process list, where any local user could read it with ps.
+# Only exported variables can be copied this way, and the
+# values read from the Keychain above are not exported yet.
+GITHUB_TOKEN="${AI_CLI_GITHUB_TOKEN:-}"
+export ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN \
+  AI_CLI_ANTHROPIC_API_KEY GITHUB_TOKEN OPENAI_API_KEY
+
 # Run the dev container
 # Codex subagents execute tool calls via bubblewrap, which requires
 # unprivileged user namespaces (unshare CLONE_NEWUSER).  The default
@@ -295,19 +305,19 @@ docker run --rm -it \
   -e "ALLOWED_MOUNT_BASE=${PWD_PARENT}" \
   -e "ALLOWED_RW_BASE=${PWD_ABS}" \
   ${ANTHROPIC_BASE_URL:+-e "ANTHROPIC_BASE_URL=${ANTHROPIC_BASE_URL}"} \
-  ${ANTHROPIC_API_KEY:+-e "ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}"} \
-  ${ANTHROPIC_AUTH_TOKEN:+-e "ANTHROPIC_AUTH_TOKEN=${ANTHROPIC_AUTH_TOKEN}"} \
-  ${AI_CLI_ANTHROPIC_API_KEY:+-e "AI_CLI_ANTHROPIC_API_KEY=${AI_CLI_ANTHROPIC_API_KEY}"} \
+  ${ANTHROPIC_API_KEY:+-e ANTHROPIC_API_KEY} \
+  ${ANTHROPIC_AUTH_TOKEN:+-e ANTHROPIC_AUTH_TOKEN} \
+  ${AI_CLI_ANTHROPIC_API_KEY:+-e AI_CLI_ANTHROPIC_API_KEY} \
   ${AI_CLI_AWS_PROFILE:+-e "AWS_PROFILE=${AI_CLI_AWS_PROFILE}"} \
   ${AWS_REGION:+-e "AWS_REGION=${AWS_REGION}"} \
   ${CLAUDE_CODE_USE_BEDROCK:+-e "CLAUDE_CODE_USE_BEDROCK=${CLAUDE_CODE_USE_BEDROCK}"} \
   ${CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY:+-e "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=${CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY}"} \
   ${CLAUDE_CODE_ATTRIBUTION_HEADER:+-e "CLAUDE_CODE_ATTRIBUTION_HEADER=${CLAUDE_CODE_ATTRIBUTION_HEADER}"} \
   ${CLAUDE_SETTINGS_OVERRIDE:+-e "AI_CLI_CLAUDE_SETTINGS=${CLAUDE_SETTINGS_OVERRIDE}"} \
-  ${AI_CLI_GITHUB_TOKEN:+-e "GITHUB_TOKEN=${AI_CLI_GITHUB_TOKEN}"} \
+  ${GITHUB_TOKEN:+-e GITHUB_TOKEN} \
   ${GOOGLE_CLOUD_PROJECT:+-e "GOOGLE_CLOUD_PROJECT=${GOOGLE_CLOUD_PROJECT}"} \
   ${GOOGLE_CLOUD_LOCATION:+-e "GOOGLE_CLOUD_LOCATION=${GOOGLE_CLOUD_LOCATION}"} \
-  ${OPENAI_API_KEY:+-e "OPENAI_API_KEY=${OPENAI_API_KEY}"} \
+  ${OPENAI_API_KEY:+-e OPENAI_API_KEY} \
   "$IMAGE" "$@"
 STATUS=$?
 exit "$STATUS"

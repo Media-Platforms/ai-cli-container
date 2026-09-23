@@ -47,6 +47,10 @@ Edit this when changing:
 Avoid making host-launch decisions here. `Dockerfile` should describe the image,
 not host environment discovery.
 
+Do not give `dev` sudo rights here. That is a security decision, not an
+ergonomic one: see "Boundary 3" in `architecture.md`. Runtime `apt install` and
+`npm install -g` are not available as a result, so new packages go in this file.
+
 ### `ai-cli-container` (installed as `claude-container`)
 
 Edit this when changing:
@@ -62,6 +66,14 @@ Edit this when changing:
 This script is a host-side compatibility surface. Be careful with shell
 portability and quoting. It already uses strict mode and array-based volume
 assembly; preserve that style.
+
+Secrets are passed as `-e NAME` with no value, which makes `docker run` copy the
+value from the launcher's own environment rather than take it as an argument any
+local user could read with `ps`. A new secret therefore needs two edits: add it
+to the `export` list before `docker run`, and pass it as `-e NAME`. Passing one
+as `-e NAME=value` puts it back in the host process list, and passing `-e NAME`
+without exporting it silently drops it, because `docker run` skips a variable
+that is not in its environment.
 
 Backend selection lives here, not in `start-ai-cli`. `AI_CLI_BACKEND` picks
 `bedrock`, `gateway`, or `anthropic`, and is inferred from the environment when
@@ -102,7 +114,10 @@ Do not move host-specific logic here. This script runs inside the container.
 
 This is the main policy engine. Typical reasons to edit it:
 
-- add or relax a blocked Docker capability
+- allow a Docker API endpoint the proxy does not yet recognize, which is what a
+  "docker: permission denied" or 403 from a normal workflow means
+- add a capability to `ALLOWED_CAPS`, or classify a new `HostConfig` field into
+  `PASS_FIELDS`, `CHECKED_FIELDS`, `NULL_ONLY_FIELDS` or `EMPTY_ONLY_FIELDS`
 - change which API requests are validated
 - tighten path handling
 - improve HTTP proxy correctness
@@ -110,6 +125,16 @@ This is the main policy engine. Typical reasons to edit it:
 
 This file is security-sensitive. Any policy change should be paired with tests
 that prove the new allowed and rejected cases.
+
+Two design rules matter more than the individual checks. First, the proxy is an
+allowlist in both directions: an unmatched endpoint and an unclassified
+`HostConfig` field are both rejected, so a new Docker feature fails closed.
+Second, it must parse a request the way the daemon does — version prefix
+stripped, path percent-decoded, JSON field names matched case-insensitively, a
+repeated field rejected — because any disagreement between the two parsers is a
+way past every check. `TestRealPayload` holds a verbatim `HostConfig` captured
+from a real `docker run` and is what catches an allowlist that has become too
+narrow for an ordinary command.
 
 ### `test_docker_socket_proxy.py`
 

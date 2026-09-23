@@ -87,9 +87,11 @@ coding container.
 ### Docker access is intentionally filtered
 
 The coding agent inside the container does not talk to the host Docker socket
-directly. The host socket is mounted to `/var/run/docker-real.sock`, then the
-entrypoint starts a Python proxy that listens on `/var/run/docker.sock` and
-validates `POST /containers/create` requests.
+directly. The host socket is mounted to `/var/run/docker-real.sock`, the
+entrypoint restricts it to root, and a Python proxy listens on
+`/var/run/docker.sock` and forwards only the requests it recognizes. The `dev`
+user has no sudo rights, which is what stops the real socket from being read
+around the proxy.
 
 ### Claude gets extra plugin support
 

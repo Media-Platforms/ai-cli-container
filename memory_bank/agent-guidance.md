@@ -58,6 +58,16 @@ environment allows.
   `-`. A direct command bypasses Claude-specific defaults and plugin injection.
 - Docker proxy write access is limited to the current working directory; sibling
   directories under the same parent may only be mounted read-only.
+- The proxy rejects any Docker API endpoint it does not explicitly allow, so a
+  nested Docker command that has never been tried may fail with 403 even though
+  it is harmless. Fix that by adding the endpoint, not by widening the matching.
+- `dev` cannot use sudo, so `apt install` fails inside the container, and so does
+  `npm install -g` because the global module directory belongs to root. Packages
+  belong in the `Dockerfile`; `pip install --user` still works.
+- Nested `docker build` uses the classic builder because the image has no buildx
+  plugin, and the proxy rejects BuildKit. The classic builder does not set
+  `TARGETARCH`, so building this repo's own `Dockerfile` from inside the
+  container needs `--build-arg TARGETARCH=...`.
 - The Pdb MCP server currently supports one active session at a time.
 
 ## What Good Changes Look Like
