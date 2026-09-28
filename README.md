@@ -430,7 +430,7 @@ The agent has access to the `pdb` MCP server for interactive debugging.
 
 #### memory-bank-analyzer
 
-Extracts project context from `memory_bank/` files before starting implementation work. It runs **proactively** after you define a task to:
+Extracts project context from `memory_bank/` or `memory-bank/` files (or both, if both exist) before starting implementation work. It runs **proactively** after you define a task to:
 
 - Extract coding standards and style guidelines
 - Identify architectural patterns and conventions

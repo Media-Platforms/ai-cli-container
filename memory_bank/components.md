@@ -154,9 +154,10 @@ If you modify the proxy without touching tests, that is usually a smell.
 
 ### `agents/memory-bank-analyzer.md`
 
-Claude subagent prompt telling another agent to read `memory_bank` after a task
-is known. The caller owns checking for `memory_bank/`; the subagent assumes it
-exists and only summarizes those files. Update this only if the memory-bank
+Claude subagent prompt telling another agent to read `memory_bank/` and/or
+`memory-bank/` after a task is known. The caller owns checking which of the two
+directories exist; the subagent assumes at least one exists and only summarizes
+files in them. Update this only if the memory-bank
 workflow itself changes.
 
 ### `codex-agents/memory-bank-analyzer.toml`

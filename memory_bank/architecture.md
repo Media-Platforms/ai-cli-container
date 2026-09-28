@@ -156,9 +156,10 @@ Owns Claude-specific extras shipped in the image:
 - `pdb_mcp_server.py`, a stdio MCP server for interactive Pdb sessions launched
   with `docker compose run`
 
-The top-level agent workflow checks for `memory_bank/` before invoking the
-`memory-bank-analyzer` subagent. The subagent itself assumes the directory is
-present and only reads those files, which keeps the ownership split clear:
+The top-level agent workflow checks for `memory_bank/` and `memory-bank/`
+before invoking the `memory-bank-analyzer` subagent, and tells the subagent
+which of them exist. The subagent itself assumes at least one is present and
+only reads files in those directories, which keeps the ownership split clear:
 callers decide whether to invoke it; the analyzer summarizes the contents.
 
 ## Seccomp Policy
