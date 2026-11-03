@@ -94,31 +94,112 @@ When `AI_CLI_BACKEND` is unset the launcher infers the backend: Bedrock if
 `CLAUDE_CODE_USE_BEDROCK` is set, otherwise the gateway if `ANTHROPIC_BASE_URL`
 or `AI_CLI_ANTHROPIC_API_KEY` is set, otherwise the Anthropic API.
 
-The gateway backend needs a key and a base URL:
+### Configuring a LiteLLM gateway
 
-- The key comes from `AI_CLI_ANTHROPIC_API_KEY`, then `ANTHROPIC_API_KEY`, then
-  your macOS Keychain under the service name `AI_CLI_ANTHROPIC_API_KEY` or
-  `ai-gateway-virtual-key`. The launcher passes it into the container as
-  `AI_CLI_ANTHROPIC_API_KEY` and configures an `apiKeyHelper` there that reads
-  it back, so Claude Code sends the key as an `x-api-key` header and as a bearer
-  token — the same pair an `apiKeyHelper` sends on the host. Setting
-  `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` instead would send only one of
-  those headers, and setting both makes Claude Code warn that the credentials
-  conflict.
-- The base URL comes from `ANTHROPIC_BASE_URL`, or from the `env` block of the
-  mounted `~/.claude/settings.json` if you already configure the gateway there.
+A LiteLLM gateway for Claude Code must expose Anthropic-compatible endpoints,
+including `POST /v1/messages`. The container uses a virtual key from the host
+and never requires a key to be written into the image or copied into a project.
 
-To store the key in your Keychain:
+#### 1. Store the virtual key on the host
 
-```bash
-security add-generic-password -s AI_CLI_ANTHROPIC_API_KEY -a "$USER" -w '<key>'
+The launcher looks for a gateway key in this order:
+
+1. `AI_CLI_ANTHROPIC_API_KEY` in the host environment
+2. `ANTHROPIC_API_KEY` in the host environment
+3. macOS Keychain item `AI_CLI_ANTHROPIC_API_KEY`
+4. macOS Keychain item `ai-gateway-virtual-key`
+
+Use one Keychain item rather than an exported key where possible. If your host
+`apiKeyHelper` already reads `ai-gateway-virtual-key`, store the container key
+there too so the host and container use the same virtual key. Use Keychain
+Access to create or update a generic password item with:
+
+- **Service:** `ai-gateway-virtual-key`
+- **Account:** your macOS username
+- **Password:** the LiteLLM virtual key
+
+A stale exported key wins over either Keychain item, so unset
+`AI_CLI_ANTHROPIC_API_KEY` and `ANTHROPIC_API_KEY` when you intend to use the
+Keychain.
+
+The launcher passes the selected key to the container as
+`AI_CLI_ANTHROPIC_API_KEY` and replaces any host `apiKeyHelper` with
+`printenv AI_CLI_ANTHROPIC_API_KEY`. This makes Claude Code send the key both
+as `x-api-key` and as a bearer token. Do not set `ANTHROPIC_AUTH_TOKEN` for
+this configuration, and do not set both `ANTHROPIC_API_KEY` and
+`ANTHROPIC_AUTH_TOKEN`: Claude Code treats those as conflicting credentials.
+
+#### 2. Configure the base URL and model names
+
+Put the LiteLLM URL and the model IDs exposed by the gateway in the host
+`~/.claude/settings.json`. That directory is mounted into the container.
+
+```json
+{
+  "env": {
+    "ANTHROPIC_BASE_URL": "https://litellm.example.com",
+    "CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY": "1",
+    "CLAUDE_CODE_ATTRIBUTION_HEADER": "0",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "claude-opus-5-5",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "claude-sonnet-5-5",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "claude-haiku-5-5"
+  }
+}
 ```
 
-An `apiKeyHelper` in your `~/.claude/settings.json` is usually a macOS
-`security` call, which cannot run in the Linux container, so the launcher
-replaces it there with `claude --settings`: with `printenv
-AI_CLI_ANTHROPIC_API_KEY` for the gateway backend, and with nothing at all for
-Bedrock, which authenticates with your AWS credentials instead.
+Use the exact model IDs configured in LiteLLM, not assumed provider-specific
+names. The three `ANTHROPIC_DEFAULT_*_MODEL` variables control the Opus,
+Sonnet, and Haiku tiers respectively. The Haiku setting is also used for
+background work, so it must identify a model that the gateway key can use.
+`CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY=1` enables model discovery, and
+`CLAUDE_CODE_ATTRIBUTION_HEADER=0` disables Claude Code's attribution header;
+the launcher supplies those values by default in gateway mode, but keeping them
+in `settings.json` also applies them to host Claude Code.
+
+A host `apiKeyHelper` is typically a macOS `security` command, which cannot
+run in the Linux container. The launcher overrides it only for the container;
+it does not modify `~/.claude/settings.json`.
+
+#### 3. Validate access and launch
+
+Set the backend explicitly. The launcher chooses a backend from the host
+process environment and does not use the `env` block in `settings.json` for
+backend selection:
+
+```bash
+AI_CLI_BACKEND=gateway claude-container -p "reply with ok"
+```
+
+Before launching, check that the virtual key can invoke the model names in your
+settings. `GET /v1/models` is useful for discovering model IDs, but a gateway
+may list models that the key is not authorized to invoke. This command sends a
+small billable request and verifies actual access:
+
+```bash
+KEY="$(security find-generic-password -s ai-gateway-virtual-key -w)"
+GATEWAY_URL="https://litellm.example.com"
+
+printf 'x-api-key: %s\n' "$KEY" | curl -sS -H @- \
+  -H 'content-type: application/json' \
+  -H 'anthropic-version: 2023-06-01' \
+  "$GATEWAY_URL/v1/messages" \
+  -d '{"model":"claude-opus-5-5","max_tokens":5,"messages":[{"role":"user","content":"reply with ok"}]}'
+```
+
+A `403` response with `key_model_access_denied` means the key is valid but is
+not allowed to use that model. Change the configured model IDs to models the
+key can use, or ask the LiteLLM administrator to grant access. A `401` means
+the key was rejected. Claude Code retries either error several times without
+printing output, which can look like a hang.
+
+To inspect a failed container request, write a debug log to the mounted working
+directory, interrupt after the first few retries, then inspect the API errors:
+
+```bash
+AI_CLI_BACKEND=gateway claude-container \
+  --debug-file ./claude-debug.log -p "reply with ok"
+grep -E 'API error|dispatching|gatewayDiscovery' claude-debug.log
+```
 
 ### Environment Variables
 
@@ -390,7 +471,8 @@ it can find neither.
 If the gateway rejects requests as unauthenticated, check which key the launcher
 picked up: `AI_CLI_ANTHROPIC_API_KEY` and `ANTHROPIC_API_KEY` both win over the
 Keychain entries, so a stale value exported in your shell will shadow a freshly
-rotated key.
+rotated key. The LiteLLM setup and model-access checks are in
+[Configuring a LiteLLM gateway](#configuring-a-litellm-gateway).
 
 ## Container Plugin
 
